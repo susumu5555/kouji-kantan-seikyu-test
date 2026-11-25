@@ -427,11 +427,65 @@ function commitPasswordMigration(config,encrypted){
  }
 }
 
+
+const UNLOCK_SESSION_ACTIVITY_KEY='koujiUnlockSessionLastActivity';
+const UNLOCK_SESSION_DB='kouji-kantan-unlock-session';
+const UNLOCK_SESSION_STORE='keys';
+function openUnlockSessionDb(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(UNLOCK_SESSION_DB,1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(UNLOCK_SESSION_STORE))db.createObjectStore(UNLOCK_SESSION_STORE)};
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||new Error('ログイン状態の保存領域を開けません'));
+ });
+}
+async function saveUnlockSessionKey(key){
+ const db=await openUnlockSessionDb();
+ try{await new Promise((resolve,reject)=>{
+  const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
+  tx.objectStore(UNLOCK_SESSION_STORE).put(key,'app-key');
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を保存できません'));
+ });}finally{db.close()}
+ sessionStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
+}
+async function readUnlockSessionKey(){
+ const db=await openUnlockSessionDb();
+ try{return await new Promise((resolve,reject)=>{
+  const tx=db.transaction(UNLOCK_SESSION_STORE,'readonly'),req=tx.objectStore(UNLOCK_SESSION_STORE).get('app-key');
+  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+ });}finally{db.close()}
+}
+async function clearUnlockSession(){
+ try{
+  sessionStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
+  const db=await openUnlockSessionDb();
+  try{await new Promise((resolve,reject)=>{
+   const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
+   tx.objectStore(UNLOCK_SESSION_STORE).delete('app-key');
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を消去できません'));
+  });}finally{db.close()}
+ }catch(e){console.warn('一時ログイン状態を消去できませんでした',e)}
+}
+async function restoreUnlockSession(){
+ try{
+  const last=Number(sessionStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY));
+  if(!Number.isFinite(last)||last<=0||Date.now()-last>=INACTIVITY_TIMEOUT_MS){await clearUnlockSession();return null}
+  const key=await readUnlockSessionKey();
+  if(!key){await clearUnlockSession();return null}
+  const encrypted=localStorage.getItem('koujiAppDataEncrypted');
+  if(!encrypted){await clearUnlockSession();return null}
+  const enc=JSON.parse(encrypted);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
+  return {key,data:normalizeData(JSON.parse(new TextDecoder().decode(plain))),lastActivity:last};
+ }catch(e){await clearUnlockSession();return null}
+}
+
 const INACTIVITY_TIMEOUT_MS=30*60*1000;
 let inactivityLastActivity=0,inactivityTimer=null,inactivityListenersInstalled=false;
 function resetInactivityTimer(){
  if(document.hidden||document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
  inactivityLastActivity=Date.now();
+ try{sessionStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(inactivityLastActivity))}catch(e){}
  if(inactivityTimer)clearTimeout(inactivityTimer);
  inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS);
 }
@@ -440,6 +494,7 @@ async function lockAfterInactivity(){
  const elapsed=Date.now()-inactivityLastActivity;
  if(elapsed<INACTIVITY_TIMEOUT_MS){inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS-elapsed);return}
  try{await persistQueue}catch(e){console.error('自動ロック前の保存待機に失敗しました',e)}
+ await clearUnlockSession();
  storageKey=null;
  $('lockTitle').textContent='アプリのロック解除';
  $('lockMessage').textContent='30分間操作がなかったためロックしました。設定したパスワードを入力してください。';
@@ -461,6 +516,7 @@ async function lockAfterInactivity(){
    const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
    data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));
    storageKey=key;
+   await saveUnlockSessionKey(key);
    $('lockScreen').style.display='none';
    document.body.classList.remove('app-locked');
    $('lockPassword').value='';
@@ -485,6 +541,16 @@ function activateInactivityLock(){
 
 async function startProtectedApp(){
  const encrypted=localStorage.getItem('koujiAppDataEncrypted'),cfg=getPasswordConfig(),legacy=localStorage.getItem('koujiAppData');
+ if(encrypted){
+  const remembered=await restoreUnlockSession();
+  if(remembered){
+   data=remembered.data;storageKey=remembered.key;
+   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
+   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
+   initializeDropboxConnection();activateInactivityLock();
+   return;
+  }
+ }
  const title=$('lockTitle'),msg=$('lockMessage'),confirmWrap=$('lockConfirmWrap'),btn=$('unlockButton');
  if(encrypted){title.textContent='アプリのロック解除';msg.textContent='保存データは暗号化されています。設定したパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='ロックを解除';$('lockPasswordLabel').textContent='パスワード';}
  else if(cfg){title.textContent='保存データを暗号化';msg.textContent='既存データを暗号化します。以前にバックアップ用パスワードを設定した場合は同じパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='登録済みパスワード';}
@@ -533,7 +599,7 @@ async function startProtectedApp(){
    }else await persist();
   }
   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
-  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
+  await saveUnlockSessionKey(storageKey);updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
  }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}};
 }
 startProtectedApp();
