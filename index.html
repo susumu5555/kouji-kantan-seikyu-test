@@ -275,11 +275,11 @@ $('restoreFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let
 updatePasswordStatus();
 
 const DROPBOX_APP_KEY='bqsl6n01r2bpbk4';
-const DROPBOX_REDIRECT_URI='https://susumu5555.github.io/kouji-kantan-seikyu/';
+const DROPBOX_REDIRECT_URI='https://susumu5555.github.io/kouji-kantan-seikyu-test/';
 const DROPBOX_SCOPE='files.metadata.read files.content.read files.content.write';
 const DROPBOX_FOLDER='/工事かんたん請求_同期';
 let dropboxAccessToken=null;
-function base64Url(bytes){return btoa(String.fromCharCode(...bytes)).split('+').join('-').split('/').join('_').replace(/=+$/,'')}
+function base64Url(bytes){if(bytes instanceof ArrayBuffer)bytes=new Uint8Array(bytes);else if(ArrayBuffer.isView(bytes))bytes=new Uint8Array(bytes.buffer,bytes.byteOffset,bytes.byteLength);return btoa(String.fromCharCode(...bytes)).split('+').join('-').split('/').join('_').replace(/=+$/,'')}
 async function dropboxConnect(){
  if(!crypto?.subtle)throw Error('安全な暗号化機能が利用できません');
  const verifier=base64Url(randomBytes(64)),digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)),state=base64Url(randomBytes(24));
