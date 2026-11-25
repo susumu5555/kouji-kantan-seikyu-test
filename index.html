@@ -511,7 +511,7 @@ async function restoreUnlockSession(){
  }catch(e){await clearUnlockSession();return null}
 }
 
-const INACTIVITY_TIMEOUT_MS=3*60*1000;
+const INACTIVITY_TIMEOUT_MS=30*60*1000;
 let inactivityLastActivity=0,inactivityTimer=null,inactivityListenersInstalled=false;
 function resetInactivityTimer(){
  if(document.hidden||document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
@@ -528,7 +528,7 @@ async function lockAfterInactivity(){
  await clearUnlockSession();
  storageKey=null;
  $('lockTitle').textContent='アプリのロック解除';
- $('lockMessage').textContent='3分間操作がなかったためロックしました（テスト設定）。設定したパスワードを入力してください。';
+ $('lockMessage').textContent='30分間操作がなかったためロックしました。設定したパスワードを入力してください。';
  $('lockPasswordLabel').textContent='パスワード';
  $('lockConfirmWrap').style.display='none';
  $('lockPassword').value='';
