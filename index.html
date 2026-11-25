@@ -344,7 +344,7 @@ async function uploadDropboxSync(){
  else {const again=prompt('確認のため、同じ同期専用パスワードをもう一度入力してください。');if(again===null)return;if(password!==again)throw Error('パスワードが一致しません。Dropboxへの保存を中止しました。');}
  const content=await makeDropboxSyncPackage(password);
  const arg={path:DROPBOX_SYNC_FILE,mode:current?{'.tag':'update',update:current.rev}:{'.tag':'add'},autorename:false,mute:true};
- const response=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Dropbox-API-Arg':JSON.stringify(arg),'Content-Type':'application/octet-stream'},body:content});
+ const response=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Dropbox-API-Arg':JSON.stringify(arg),'Content-Type':'application/octet-stream'},body:new TextEncoder().encode(content)});
  const result=await response.json().catch(()=>({}));
  if(!response.ok)throw Error('Dropbox保存失敗：'+(result.error_summary||response.status));
  localStorage.setItem(DROPBOX_SYNC_REV_KEY,result.rev);
