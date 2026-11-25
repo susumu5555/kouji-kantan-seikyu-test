@@ -376,7 +376,23 @@ async function saveUnlockSessionKey(key){
   tx.objectStore(UNLOCK_SESSION_STORE).put(key,'app-key');
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を保存できません'));
  });}finally{db.close()}
- localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
+ try{
+  localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
+  if(!localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY))throw Error('ログイン時刻の読み戻し確認に失敗しました');
+ }catch(activitySaveError){
+  try{
+   const cleanupDb=await openUnlockSessionDb();
+   try{await new Promise((resolve,reject)=>{
+    const tx=cleanupDb.transaction(UNLOCK_SESSION_STORE,'readwrite');
+    tx.objectStore(UNLOCK_SESSION_STORE).delete('app-key');
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('一時ログイン鍵を消去できません'));
+   });}finally{cleanupDb.close()}
+   localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
+  }catch(cleanupError){
+   throw Error('ログイン状態の保存に失敗し、一時ログイン情報の消去も確認できませんでした。アプリを閉じずに再試行してください。保存エラー：'+(activitySaveError.message||activitySaveError)+'／消去エラー：'+(cleanupError.message||cleanupError));
+  }
+  throw Error('ログイン時刻を保存できなかったため、一時ログイン鍵を消去しました：'+(activitySaveError.message||activitySaveError));
+ }
 }
 async function readUnlockSessionKey(){
  const db=await openUnlockSessionDb();
