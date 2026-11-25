@@ -402,15 +402,19 @@ async function readUnlockSessionKey(){
  });}finally{db.close()}
 }
 async function clearUnlockSession(){
+ const errors=[];
+ try{localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);if(localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY)!==null)throw Error('ログイン時刻の削除確認に失敗しました')}catch(e){errors.push('ログイン時刻：'+(e.message||e))}
  try{
-  localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
   const db=await openUnlockSessionDb();
   try{await new Promise((resolve,reject)=>{
    const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
    tx.objectStore(UNLOCK_SESSION_STORE).delete('app-key');
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を消去できません'));
   });}finally{db.close()}
- }catch(e){console.warn('一時ログイン状態を消去できませんでした',e)}
+  const remaining=await readUnlockSessionKey();
+  if(remaining)throw Error('一時ログイン鍵の削除確認に失敗しました');
+ }catch(e){errors.push('一時ログイン鍵：'+(e.message||e))}
+ if(errors.length)console.warn('一時ログイン状態の一部または全部を消去できませんでした',errors.join('／'));
 }
 async function restoreUnlockSession(){
  try{
