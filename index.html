@@ -142,13 +142,26 @@ async function showDocument(j,type){
  if(type==='receipt'){generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});return}
  const key=type==='estimate'?'estimateDate':'invoiceDate';
  const label=type==='estimate'?'見積日':'発行日';
- if(!j[key]){
+ const target=data.jobs.find(x=>x.id===j.id)||j;
+ if(!target[key]){
   const selected=await chooseDocumentDate(label,todayLocalDate());
   if(!selected)return;
-  j[key]=selected;
-  try{await persist()}catch(e){delete j[key];alert('日付を保存できませんでした。変更は反映していません。詳細：'+(e.message||e));return}
+  const previous=target[key];
+  target[key]=selected;
+  try{
+   await persist();
+   const raw=JSON.parse(localStorage.getItem('koujiAppDataEncrypted')||'null');
+   if(!raw||!raw.ciphertext)throw Error('保存データを確認できません');
+   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(raw.iv)},storageKey,unb64(raw.ciphertext));
+   const saved=JSON.parse(new TextDecoder().decode(plain));
+   const savedJob=(saved.jobs||[]).find(x=>x.id===target.id);
+   if(!savedJob||savedJob[key]!==selected)throw Error('選択した日付の保存確認に失敗しました');
+  }catch(e){
+   if(previous===undefined)delete target[key];else target[key]=previous;
+   alert('日付を保存できませんでした。もう一度お試しください。詳細：'+(e.message||e));return;
+  }
  }
- generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});
+ generatePdfDocument(target,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});
 }
 function pdfText(ctx,text,x,y,maxWidth,lineHeight,font){
  ctx.font=font;let lines=[],line='';
