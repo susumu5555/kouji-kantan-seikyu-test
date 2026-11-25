@@ -522,8 +522,9 @@ async function startProtectedApp(){
     alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
    }else {$('lockError').textContent='暗号化データを保存しています…';await persist();}
   }
+  $('lockError').textContent='ログイン状態を保存しています…';await saveUnlockSessionKey(storageKey);
   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
-  $('lockError').textContent='ログイン状態を保存しています…';await saveUnlockSessionKey(storageKey);updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();activateInactivityLock();
+  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();activateInactivityLock();
  }catch(err){const message=err.message||'ロックを解除できませんでした';$('lockError').textContent=message;if(message==='パスワードが違います。'){alert('パスワードが違います。入力内容を確認して、もう一度入力してください。');$('lockPassword').value='';$('lockPassword').focus();}btn.disabled=false;btn.textContent=encrypted?'ロックを解除':'暗号化して開始';}};
  if(encrypted){
   const remembered=await restoreUnlockSession();
