@@ -574,8 +574,8 @@ async function startProtectedApp(){
  if(encrypted){title.textContent='アプリのロック解除';msg.textContent='保存データは暗号化されています。設定したパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='ロックを解除';$('lockPasswordLabel').textContent='パスワード';}
  else if(cfg){title.textContent='保存データを暗号化';msg.textContent='既存データを暗号化します。以前にバックアップ用パスワードを設定した場合は同じパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='登録済みパスワード';}
  else {title.textContent='データ保護の設定';msg.textContent='このアプリの保存データを暗号化します。8文字以上のパスワードを設定してください。忘れると復元できません。';confirmWrap.style.display='block';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='新しいパスワード';}
- btn.onclick=async()=>{const pw=$('lockPassword').value,pw2=$('lockPasswordConfirm').value;$('lockError').textContent='';try{
-  if(!crypto?.subtle)throw Error('暗号化機能を使えません。HTTPSで開いてください。');
+ btn.onclick=async()=>{const pw=$('lockPassword').value,pw2=$('lockPasswordConfirm').value;$('lockError').textContent='処理を開始しています…';btn.disabled=true;btn.textContent='処理中…';try{
+  $('lockError').textContent='暗号化機能を確認しています…';if(!crypto?.subtle)throw Error('暗号化機能を使えません。HTTPSで開いてください。');
   let activeCfg=cfg;
   if(encrypted){
    if(!activeCfg)throw Error('パスワード情報がありません。暗号化バックアップからの復元が必要です。');
@@ -599,8 +599,8 @@ async function startProtectedApp(){
    }
   }else{
    if(activeCfg){if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');}
-   else {if(pw.length<8)throw Error('パスワードは8文字以上にしてください。');if(pw!==pw2)throw Error('確認用パスワードが一致しません。');const salt=randomBytes(16);activeCfg={salt:b64(salt),verifier:await passwordVerifier(pw,salt,BACKUP_ITERATIONS),iterations:BACKUP_ITERATIONS};localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify(activeCfg));}
-   data=normalizeData(legacy?JSON.parse(legacy):null);storageKey=await deriveAesKey(pw,unb64(activeCfg.salt),activeCfg.iterations);
+   else {if(pw.length<8)throw Error('パスワードは8文字以上にしてください。');if(pw!==pw2)throw Error('確認用パスワードが一致しません。');$('lockError').textContent='パスワードを安全に登録しています…';const salt=randomBytes(16);activeCfg={salt:b64(salt),verifier:await passwordVerifier(pw,salt,BACKUP_ITERATIONS),iterations:BACKUP_ITERATIONS};localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify(activeCfg));}
+   $('lockError').textContent='保存データの暗号化キーを作成しています…';data=normalizeData(legacy?JSON.parse(legacy):null);storageKey=await deriveAesKey(pw,unb64(activeCfg.salt),activeCfg.iterations);
    if(pw.length<8){
     alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
     const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
@@ -615,11 +615,11 @@ async function startProtectedApp(){
     commitPasswordMigration({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS},{format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
     storageKey=newKey;
     alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
-   }else await persist();
+   }else {$('lockError').textContent='暗号化データを保存しています…';await persist();}
   }
   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
-  await saveUnlockSessionKey(storageKey);updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
- }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}};
+  $('lockError').textContent='ログイン状態を保存しています…';await saveUnlockSessionKey(storageKey);updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
+ }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';btn.disabled=false;btn.textContent=encrypted?'ロックを解除':'暗号化して開始';}};
  if(encrypted){
   const remembered=await restoreUnlockSession();
   if(remembered){
