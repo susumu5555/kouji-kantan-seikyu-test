@@ -187,7 +187,7 @@ function pdfCanvasPage(j,type,items,pageIndex,pageCount){
  for(const line of [issuerAddress,issuerPhone?'TEL：'+issuerPhone:'',issuerEmail?'MAIL：'+issuerEmail:'',invoiceNo?'インボイス登録番号：'+invoiceNo:''].filter(Boolean)){iy+=pdfText(c,line,mid+36,iy,480,27,'19px sans-serif')+4}
  // Subject and amount
  let y=490;c.fillStyle=dark;c.font='bold 23px sans-serif';
- c.fillText(isReceipt?'領収内容':'件名：'+(isQuote?(j.estimateSubject||'工事のお見積り'):(j.invoiceSubject||'工事代')),left,y);
+ c.fillText(isReceipt?'領収内容':'件名：'+(isQuote?(j.estimateSubject||data.settings.estimateSubject||'工事のお見積り'):(j.invoiceSubject||data.settings.invoiceSubject||'工事代')),left,y);
  c.fillStyle=muted;c.font='19px sans-serif';c.fillText(isReceipt?'下記の金額を領収いたしました。':isQuote?'下記の通りお見積り申し上げます。':'下記の通りご請求申し上げます。',left,y+42);
  c.strokeStyle=blue;c.lineWidth=3;c.beginPath();c.moveTo(left,y+112);c.lineTo(right,y+112);c.stroke();
  c.fillStyle=dark;c.font='bold 25px sans-serif';c.fillText(isReceipt?'領収金額':isQuote?'御見積金額':'御請求金額',left+18,y+91);
