@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kouji-kantan-pwa-v30';
+const CACHE_NAME = 'kouji-kantan-pwa-v31';
 const CORE = ['./','./index.html','./manifest.webmanifest'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('kouji-kantan-pwa-') && k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())));
