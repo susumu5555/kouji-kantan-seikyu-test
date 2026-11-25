@@ -426,6 +426,63 @@ function commitPasswordMigration(config,encrypted){
   throw Error('パスワード移行の保存に失敗したため、変更前の状態に戻しました：'+saveError.message);
  }
 }
+
+const INACTIVITY_TIMEOUT_MS=30*60*1000;
+let inactivityLastActivity=0,inactivityTimer=null,inactivityListenersInstalled=false;
+function resetInactivityTimer(){
+ if(document.hidden||document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
+ inactivityLastActivity=Date.now();
+ if(inactivityTimer)clearTimeout(inactivityTimer);
+ inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS);
+}
+async function lockAfterInactivity(){
+ if(document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
+ const elapsed=Date.now()-inactivityLastActivity;
+ if(elapsed<INACTIVITY_TIMEOUT_MS){inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS-elapsed);return}
+ try{await persistQueue}catch(e){console.error('自動ロック前の保存待機に失敗しました',e)}
+ storageKey=null;
+ $('lockTitle').textContent='アプリのロック解除';
+ $('lockMessage').textContent='30分間操作がなかったためロックしました。設定したパスワードを入力してください。';
+ $('lockPasswordLabel').textContent='パスワード';
+ $('lockConfirmWrap').style.display='none';
+ $('lockPassword').value='';
+ $('lockPasswordConfirm').value='';
+ $('lockError').textContent='';
+ $('unlockButton').textContent='ロックを解除';
+ $('lockScreen').style.display='flex';
+ document.body.classList.add('app-locked');
+ $('unlockButton').onclick=async()=>{
+  $('lockError').textContent='';
+  try{
+   const cfg=getPasswordConfig(),encrypted=localStorage.getItem('koujiAppDataEncrypted'),pw=$('lockPassword').value;
+   if(!cfg||!encrypted)throw Error('暗号化データまたはパスワード情報が見つかりません。');
+   if(!constantTimeEqual(await passwordVerifier(pw,unb64(cfg.salt),cfg.iterations),cfg.verifier))throw Error('パスワードが違います。');
+   const enc=JSON.parse(encrypted),key=await deriveAesKey(pw,unb64(enc.salt||cfg.salt),cfg.iterations);
+   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
+   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));
+   storageKey=key;
+   $('lockScreen').style.display='none';
+   document.body.classList.remove('app-locked');
+   $('lockPassword').value='';
+   $('lockPasswordConfirm').value='';
+   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
+   initializeDropboxConnection();
+   resetInactivityTimer();
+  }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}
+ };
+}
+function activateInactivityLock(){
+ if(!inactivityListenersInstalled){
+  const events=['pointerdown','keydown','touchstart','click','input','change','scroll'];
+  events.forEach(name=>document.addEventListener(name,resetInactivityTimer,{passive:true}));
+  document.addEventListener('visibilitychange',()=>{
+   if(!document.hidden&&inactivityLastActivity&&Date.now()-inactivityLastActivity>=INACTIVITY_TIMEOUT_MS)lockAfterInactivity();
+  });
+  inactivityListenersInstalled=true;
+ }
+ resetInactivityTimer();
+}
+
 async function startProtectedApp(){
  const encrypted=localStorage.getItem('koujiAppDataEncrypted'),cfg=getPasswordConfig(),legacy=localStorage.getItem('koujiAppData');
  const title=$('lockTitle'),msg=$('lockMessage'),confirmWrap=$('lockConfirmWrap'),btn=$('unlockButton');
@@ -476,7 +533,7 @@ async function startProtectedApp(){
    }else await persist();
   }
   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
-  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();
+  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
  }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}};
 }
 startProtectedApp();
