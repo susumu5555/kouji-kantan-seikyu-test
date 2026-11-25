@@ -121,7 +121,7 @@ function persist(){if(!storageKey)throw new Error('データ保護のロック�
 const $=id=>document.getElementById(id);const yen=n=>(Number(n)||0).toLocaleString('ja-JP')+'円';const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function tab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===name));if(name==='history')renderHistory();if(name==='items')renderManage()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
-$('workDate').value=todayLocalDate();$('workDateMode').onchange=()=>{$('workDate').classList.toggle('hidden',$('workDateMode').value==='undecided')};
+$('workDateMode').value='date';$('workDate').value=todayLocalDate();$('workDate').classList.remove('hidden');$('workDateMode').onchange=()=>{$('workDate').classList.toggle('hidden',$('workDateMode').value==='undecided')};
 $('custType').onchange=()=>{$('corpFields').classList.toggle('hidden',$('custType').value!=='法人');$('custNameLabel').textContent=$('custType').value==='法人'?'会社名':'お客様氏名';if($('custType').value==='法人')renderCorporations();else selectedCorporationId=''};
 function renderCorporations(){let sel=$('corpSelect');if(!sel)return;let current=selectedCorporationId;sel.innerHTML='<option value="">新しい法人を入力</option>'+data.corporations.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.address?' ／ '+esc(c.address):''}</option>`).join('');if(current&&data.corporations.some(c=>c.id===current))sel.value=current;else sel.value=''}
 $('corpSelect').onchange=()=>{let c=data.corporations.find(x=>x.id===$('corpSelect').value);selectedCorporationId=c?c.id:'';if(!c){$('custName').value='';$('dept').value='';$('person').value='';$('custAddress').value='';$('custPhone').value='';return}$('custName').value=c.name||'';$('dept').value=c.dept||'';$('person').value=c.person||'';$('custAddress').value=c.address||'';$('custPhone').value=c.phone||''};
@@ -142,11 +142,12 @@ async function showDocument(j,type){
  if(type==='receipt'){generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});return}
  const key=type==='estimate'?'estimateDate':'invoiceDate';
  const label=type==='estimate'?'見積日':'発行日';
- const selected=await chooseDocumentDate(label,j[key]||todayLocalDate());
- if(!selected)return;
- const previous=j[key]||'';
- j[key]=selected;
- try{await persist()}catch(e){if(previous)j[key]=previous;else delete j[key];alert('日付を保存できませんでした。変更は反映していません。詳細：'+(e.message||e));return}
+ if(!j[key]){
+  const selected=await chooseDocumentDate(label,todayLocalDate());
+  if(!selected)return;
+  j[key]=selected;
+  try{await persist()}catch(e){delete j[key];alert('日付を保存できませんでした。変更は反映していません。詳細：'+(e.message||e));return}
+ }
  generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});
 }
 function pdfText(ctx,text,x,y,maxWidth,lineHeight,font){
