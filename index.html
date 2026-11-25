@@ -84,6 +84,8 @@ body.app-locked header,body.app-locked .wrap{visibility:hidden}
 <div id="printArea" class="printdoc hidden"></div>
 </div>
 <script>
+window.addEventListener('error',event=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ起動エラー：'+(event.message||'不明なエラー')});
+window.addEventListener('unhandledrejection',event=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ起動エラー：'+(event.reason?.message||String(event.reason||'不明なエラー'))});
 const defaultItems=[
 ['配管関係','冷媒配管延長',null],['配管関係','ドレンホース延長',null],['配管関係','配管化粧テープ巻き直し',null],['配管関係','既設配管再利用',null],['化粧カバー','室内化粧カバー取付',null],['化粧カバー','室外化粧カバー取付',null],['化粧カバー','化粧カバー延長',null],['穴あけ関係','木造壁穴あけ',null],['穴あけ関係','ALC壁穴あけ',null],['穴あけ関係','コンクリート穴あけ',null],['電気関係','コンセント交換',null],['電気関係','電圧切替',null],['電気関係','専用回路工事',null],['室外機設置','屋根置き金具設置',null],['室外機設置','壁面金具設置',null],['室外機設置','二段置き金具設置',null],['室外機設置','室外機吊り下げ',null],['その他','エアコン取り外し',null],['その他','既設エアコン処分',null],['その他','運搬費',null],['その他','高所作業費',null]
 ].map((x,i)=>({id:'d'+i,category:x[0],name:x[1],price:x[2]}));
@@ -613,7 +615,7 @@ async function startProtectedApp(){
  }
 
 }
-startProtectedApp();
+startProtectedApp().catch(err=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ初期化エラー：'+(err?.message||String(err))});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('Service Worker registration failed', err)));
 }
