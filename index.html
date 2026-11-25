@@ -331,7 +331,7 @@ async function saveUnlockSessionKey(key){
   tx.objectStore(UNLOCK_SESSION_STORE).put(key,'app-key');
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を保存できません'));
  });}finally{db.close()}
- sessionStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
+ localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
 }
 async function readUnlockSessionKey(){
  const db=await openUnlockSessionDb();
@@ -342,7 +342,7 @@ async function readUnlockSessionKey(){
 }
 async function clearUnlockSession(){
  try{
-  sessionStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
+  localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
   const db=await openUnlockSessionDb();
   try{await new Promise((resolve,reject)=>{
    const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
@@ -353,7 +353,7 @@ async function clearUnlockSession(){
 }
 async function restoreUnlockSession(){
  try{
-  const last=Number(sessionStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY));
+  const last=Number(localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY));
   if(!Number.isFinite(last)||last<=0||Date.now()-last>=INACTIVITY_TIMEOUT_MS){await clearUnlockSession();return null}
   const key=await readUnlockSessionKey();
   if(!key){await clearUnlockSession();return null}
@@ -370,7 +370,7 @@ let inactivityLastActivity=0,inactivityTimer=null,inactivityListenersInstalled=f
 function resetInactivityTimer(){
  if(document.hidden||document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
  inactivityLastActivity=Date.now();
- try{sessionStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(inactivityLastActivity))}catch(e){}
+ try{localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(inactivityLastActivity))}catch(e){}
  if(inactivityTimer)clearTimeout(inactivityTimer);
  inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS);
 }
