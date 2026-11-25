@@ -341,14 +341,19 @@ try{sessionStorage.removeItem('koujiDropboxAccessToken');sessionStorage.removeIt
 function commitPasswordMigration(config,encrypted){
  const previous={config:localStorage.getItem('koujiBackupPasswordConfig'),encrypted:localStorage.getItem('koujiAppDataEncrypted'),legacy:localStorage.getItem('koujiAppData')};
  const restore=(key,value)=>{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)};
+ const verify=(key,value)=>{if(localStorage.getItem(key)!==value)throw Error(key+'の読み戻し確認に失敗しました')};
+ const nextConfig=JSON.stringify(config),nextEncrypted=JSON.stringify(encrypted);
  try{
-  localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify(config));
-  localStorage.setItem('koujiAppDataEncrypted',JSON.stringify(encrypted));
-  localStorage.removeItem('koujiAppData');
+  localStorage.setItem('koujiBackupPasswordConfig',nextConfig);verify('koujiBackupPasswordConfig',nextConfig);
+  localStorage.setItem('koujiAppDataEncrypted',nextEncrypted);verify('koujiAppDataEncrypted',nextEncrypted);
+  localStorage.removeItem('koujiAppData');verify('koujiAppData',null);
  }catch(saveError){
-  try{restore('koujiBackupPasswordConfig',previous.config);restore('koujiAppDataEncrypted',previous.encrypted);restore('koujiAppData',previous.legacy);}
-  catch(restoreError){throw Error('パスワード移行の保存に失敗し、元データの復元にも失敗しました。アプリを閉じず、保存領域を確認してください。保存エラー：'+saveError.message+'／復元エラー：'+restoreError.message)}
-  throw Error('パスワード移行の保存に失敗したため、変更前の状態に戻しました：'+saveError.message);
+  const restoreErrors=[];
+  for(const [key,value] of [['koujiBackupPasswordConfig',previous.config],['koujiAppDataEncrypted',previous.encrypted],['koujiAppData',previous.legacy]]){
+   try{restore(key,value);verify(key,value)}catch(restoreError){restoreErrors.push(key+'：'+(restoreError.message||restoreError))}
+  }
+  if(restoreErrors.length)throw Error('パスワード移行の保存に失敗し、元データの差し戻しも完全には確認できませんでした。アプリを閉じず、保存領域を確認してください。保存エラー：'+(saveError.message||saveError)+'／差し戻しエラー：'+restoreErrors.join('／'));
+  throw Error('パスワード移行の保存に失敗したため、変更前の状態へ戻したことを確認しました：'+(saveError.message||saveError));
  }
 }
 
