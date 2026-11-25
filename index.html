@@ -551,16 +551,6 @@ function activateInactivityLock(){
 
 async function startProtectedApp(){
  const encrypted=localStorage.getItem('koujiAppDataEncrypted'),cfg=getPasswordConfig(),legacy=localStorage.getItem('koujiAppData');
- if(encrypted){
-  const remembered=await restoreUnlockSession();
-  if(remembered){
-   data=remembered.data;storageKey=remembered.key;
-   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
-   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
-   initializeDropboxConnection();activateInactivityLock();
-   return;
-  }
- }
  const title=$('lockTitle'),msg=$('lockMessage'),confirmWrap=$('lockConfirmWrap'),btn=$('unlockButton');
  if(encrypted){title.textContent='アプリのロック解除';msg.textContent='保存データは暗号化されています。設定したパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='ロックを解除';$('lockPasswordLabel').textContent='パスワード';}
  else if(cfg){title.textContent='保存データを暗号化';msg.textContent='既存データを暗号化します。以前にバックアップ用パスワードを設定した場合は同じパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='登録済みパスワード';}
@@ -611,6 +601,17 @@ async function startProtectedApp(){
   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
   await saveUnlockSessionKey(storageKey);updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();activateInactivityLock();
  }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}};
+ if(encrypted){
+  const remembered=await restoreUnlockSession();
+  if(remembered){
+   data=remembered.data;storageKey=remembered.key;
+   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
+   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
+   initializeDropboxConnection();activateInactivityLock();
+   return;
+  }
+ }
+
 }
 startProtectedApp();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
