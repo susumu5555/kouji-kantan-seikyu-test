@@ -446,6 +446,7 @@ async function reviewUnknownDropboxFiles(files){
   const preview=document.createElement('div');preview.style.cssText='display:none;margin:10px 0;padding:8px;border:1px solid #dce2ea;border-radius:10px;background:#f8fafc;overflow:auto';
   let previewUrl=null;
   open.onclick=async()=>{
+   if(preview.style.display==='block'){preview.style.display='none';open.textContent='アプリ内で内容をプレビュー';if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}preview.innerHTML='';return}
    try{
     open.disabled=true;open.textContent='Dropboxから取得中…';
     const bytes=await getDropboxFile(file);
@@ -470,7 +471,6 @@ async function reviewUnknownDropboxFiles(files){
    }catch(e){alert('プレビューできませんでした：'+e.message);open.textContent='もう一度プレビュー';}
    finally{open.disabled=false}
   };
-  open.addEventListener('click',()=>{if(preview.style.display==='block'){preview.style.display='none';open.textContent='アプリ内で内容をプレビュー';if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null}preview.innerHTML=''}});
   card.appendChild(open);
   card.appendChild(preview);
   const select=document.createElement('select');select.style.cssText='width:100%;padding:12px;margin:8px 0;border:1px solid #cbd3df;border-radius:10px;background:#fff;font:inherit';
