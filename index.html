@@ -137,7 +137,7 @@ function createJob(){let c=getCustomer();const isWorkDateUndecided=$('workDateMo
 let isSavingJob=false;$('saveInvoice').onclick=async()=>{if(isSavingJob)return;isSavingJob=true;$('saveInvoice').disabled=true;try{let j=createJob();if(!j)return;const previous=JSON.stringify(data);data.jobs.unshift(j);saveCorporation(j.customer);try{await persist();activeJob=j;cart=[];renderCart();renderHistory();showDocument(j,'invoice');alert('工事データの暗号化保存が完了しました。請求書PDFを作成します。')}catch(err){data=JSON.parse(previous);renderCorporations();renderHistory();alert('保存に失敗しました。工事データは確定していません。空き容量やブラウザの保存設定を確認してください。詳細：'+(err.message||err))}}finally{isSavingJob=false;$('saveInvoice').disabled=false}};
 function issuer(j){let x=j.issuer||{};let email=x.companyEmail||data.settings.companyEmail||'',inv=x.invoiceNumber||data.settings.invoiceNumber||'';return [x.company||data.settings.company||'',x.companyAddress||data.settings.companyAddress||'',x.companyPhone||data.settings.companyPhone||'',email?'メール：'+email:'',inv?'インボイス登録番号：'+inv:''].filter(Boolean).join('\n')}
 
-async async function showDocument(j,type){
+async function showDocument(j,type){
  if(!j)return;
  if(type==='receipt'){generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')});return}
  const key=type==='estimate'?'estimateDate':'invoiceDate';
