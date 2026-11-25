@@ -1,0 +1,9 @@
+{
+  "name": "工事かんたん請求（テスト）",
+  "short_name": "工事請求テスト",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6fa",
+  "theme_color": "#1457a6"
+}
