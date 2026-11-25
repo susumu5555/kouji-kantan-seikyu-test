@@ -362,7 +362,12 @@ async function restoreUnlockSession(){
   const enc=JSON.parse(encrypted);
   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
   return {key,data:normalizeData(JSON.parse(new TextDecoder().decode(plain))),lastActivity:last};
- }catch(e){await clearUnlockSession();return null}
+ }catch(e){
+  console.warn('一時ログイン状態の復元に失敗しました。保存情報は消去せず保持します。',e);
+  const screen=document.getElementById('lockError');
+  if(screen)screen.textContent='前回のログイン状態を復元できませんでした。保存情報は保持しています。パスワードで解除してください。';
+  return null;
+ }
 }
 
 const INACTIVITY_TIMEOUT_MS=30*60*1000;
