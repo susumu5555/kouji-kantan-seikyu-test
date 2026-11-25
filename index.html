@@ -279,7 +279,7 @@ async function generatePdfDocument(j,type){
  const items=j.items||[],perPage=14,pageCount=Math.max(1,Math.ceil(items.length/perPage)),canvases=[];
  for(let p=0;p<pageCount;p++)canvases.push(pdfCanvasPage(j,type,items.slice(p*perPage,(p+1)*perPage),p,pageCount));
  const blob=await buildPdfFromCanvases(canvases);
- const safe=String(j.number||'document').replace(/[^\\w-]/g,'_');
+ const safe=String(j.number||'document').replace(/[^\w-]/g,'_');
  const title=type==='receipt'?'領収書':type==='estimate'?'見積書':'請求書';
  const filename=title+'_'+safe+'.pdf';
  downloadBlob(blob,filename);
