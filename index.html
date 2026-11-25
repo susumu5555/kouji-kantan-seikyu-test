@@ -421,7 +421,7 @@ async function clearUnlockSession(){
 async function restoreUnlockSession(){
  try{
   const last=Number(localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY));
-  if(!Number.isFinite(last)||last<=0||Date.now()-last>=INACTIVITY_TIMEOUT_MS){await clearUnlockSession();return null}
+  if(!Number.isFinite(last)||last<=0||last>Date.now()||Date.now()-last>=INACTIVITY_TIMEOUT_MS){await clearUnlockSession();return null}
   const key=await readUnlockSessionKey();
   if(!key){await clearUnlockSession();return null}
   const encrypted=localStorage.getItem('koujiAppDataEncrypted');
@@ -449,7 +449,7 @@ function resetInactivityTimer(){
 async function lockAfterInactivity(){
  if(document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
  const elapsed=Date.now()-inactivityLastActivity;
- if(elapsed<INACTIVITY_TIMEOUT_MS){inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS-elapsed);return}
+ if(elapsed>=0&&elapsed<INACTIVITY_TIMEOUT_MS){inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS-elapsed);return}
  try{await persistQueue}catch(e){console.error('自動ロック前の保存待機に失敗しました',e)}
  await clearUnlockSession();
  storageKey=null;
