@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1457a6">
+<meta name="description" content="エアコン工事の追加工事、請求書、領収書を管理する個人用アプリ">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>工事かんたん請求</title>
+<style>
+:root{--blue:#1457a6;--blue2:#eaf2fc;--ink:#172033;--muted:#657184;--line:#dce2ea;--bg:#f4f6f9;--green:#16834b;--red:#b42318}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}header{background:var(--blue);color:#fff;padding:16px max(16px,env(safe-area-inset-left));position:sticky;top:0;z-index:5;box-shadow:0 2px 8px #0002}header h1{font-size:20px;margin:0}header small{opacity:.85}.wrap{max-width:900px;margin:auto;padding:14px 14px 90px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}.tab{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 5px;font-weight:700;font-size:13px;color:var(--ink)}.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}.panel{display:none}.panel.active{display:block}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 2px 7px #15233a08}.card h2{font-size:17px;margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{margin:9px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;border:1px solid #cbd3df;border-radius:10px;padding:12px;font:inherit;background:#fff;min-height:46px}.field textarea{min-height:75px}.btn{border:0;border-radius:12px;background:var(--blue);color:#fff;padding:14px 16px;font-weight:800;font-size:15px;min-height:48px;cursor:pointer}.btn.secondary{background:var(--blue2);color:var(--blue)}.btn.gray{background:#eef1f5;color:#263244}.btn.red{background:#fff0ef;color:var(--red)}.btn.green{background:var(--green)}.btn.full{width:100%}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions>*{flex:1}.category{font-size:13px;color:var(--muted);font-weight:800;margin:16px 0 7px}.itemgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.item{border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;text-align:left;min-height:82px}.item strong{display:block;font-size:14px}.item span{font-size:12px;color:var(--muted)}.item em{display:block;font-style:normal;font-weight:800;color:var(--blue);margin-top:6px}.item.added{border:2px solid var(--green);background:#effaf3;box-shadow:0 0 0 2px #16834b18}.item.added em{color:var(--green)}.add-feedback{display:none;margin:10px 0;padding:12px;border-radius:12px;background:#eaf8ef;border:1px solid #9bd5ad;color:#126438;font-weight:800}.add-feedback.show{display:flex;align-items:center;justify-content:space-between;gap:8px}.add-feedback button{border:0;border-radius:9px;padding:9px 12px;background:#16834b;color:#fff;font-weight:800;white-space:nowrap}.cart-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;border-radius:99px;background:#eaf2fc;color:#1457a6;font-size:13px;font-weight:900;margin-left:6px}.cartrow,.historyrow{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:10px 0}.cartrow:last-child,.historyrow:last-child{border:0}.qty{display:flex;align-items:center;gap:7px}.qty button{width:32px;height:32px;border:0;border-radius:9px;background:var(--blue2);color:var(--blue);font-weight:900}.qty input{width:48px;text-align:center;padding:5px;border:1px solid var(--line);border-radius:8px}.total{background:#f7f9fc;border-radius:12px;padding:12px}.totalline{display:flex;justify-content:space-between;margin:6px 0}.grand{font-size:22px;font-weight:900;color:var(--blue)}.hint{font-size:12px;color:var(--muted);line-height:1.6}.pill{display:inline-block;background:#edf2f8;border-radius:99px;padding:4px 9px;font-size:11px;color:#42516a}.empty{text-align:center;color:var(--muted);padding:22px 8px}.hidden{display:none!important}.notice{background:#fff8e6;border:1px solid #f2d58a;border-radius:12px;padding:11px;font-size:12px;line-height:1.6}.checkline{display:flex;align-items:center;gap:8px}.checkline input{width:20px;height:20px}.danger{color:var(--red)}
+@media(min-width:650px){.itemgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.wrap{padding-top:22px}.tabs{max-width:650px}.tab{font-size:14px}}
+@media print{body{background:#fff}.no-print,header,.tabs{display:none!important}.wrap{padding:0;max-width:none}.printdoc{display:block!important}.panel{display:none!important}#printArea{display:block!important}.card{box-shadow:none;border:0;padding:0;margin:0}.doc{font-family:"Noto Sans JP",sans-serif;color:#111;padding:8mm}.doc h1{text-align:center;font-size:25px;letter-spacing:.5em;margin:0 0 22px}.doc .top{display:flex;justify-content:space-between;gap:20px}.doc table{width:100%;border-collapse:collapse;margin:18px 0;font-size:12px}.doc th,.doc td{border:1px solid #777;padding:8px;text-align:left}.doc th{background:#f1f1f1}.doc .num{text-align:right}.doc .sum{width:48%;margin-left:auto}.doc .sum div{display:flex;justify-content:space-between;padding:5px;border-bottom:1px solid #bbb}.doc .sum .last{font-size:18px;font-weight:bold;border-bottom:2px solid #111}.doc .issuer{text-align:right;white-space:pre-line}.doc .memo{margin-top:28px;border-top:1px solid #777;padding-top:10px;font-size:12px}.doc .stamp{margin:25px 0 0 auto;border:1px solid #555;width:110px;height:65px;display:flex;align-items:center;justify-content:center;font-size:11px}}
+
+#lockScreen{position:fixed;inset:0;z-index:1000;background:#f4f6f9;display:flex;align-items:center;justify-content:center;padding:20px}
+#lockScreen .lock-card{background:#fff;border:1px solid #dce2ea;border-radius:18px;padding:22px;width:min(100%,430px);box-shadow:0 8px 30px #0002}
+#lockScreen h2{margin:0 0 10px;font-size:20px}#lockScreen p{font-size:13px;line-height:1.7;color:#526071}
+#lockScreen input{width:100%;padding:14px;border:1px solid #cbd3df;border-radius:10px;font:inherit;margin:6px 0 12px}
+body.app-locked header,body.app-locked .wrap{visibility:hidden}
+
+
+.doc{font-family:"Noto Sans JP",sans-serif;color:#172033;padding:7mm;background:#fff}
+.doc-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#7888ad;color:#fff;padding:10px 14px;margin-bottom:14px;border-bottom:5px solid #c6cede}
+.doc-banner h1{font-size:23px;letter-spacing:.12em;margin:0;color:#fff}
+.doc-banner-meta{text-align:right;font-size:10px;line-height:1.7;color:#fff}
+.doc-parties{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:12px 0}
+.party-card{padding:10px 12px;min-height:128px;box-sizing:border-box}
+.party-label{font-size:10px;color:#fff;font-weight:bold;background:#7888ad;padding:4px 7px;margin:-10px -12px 9px}
+.party-name{font-size:16px;font-weight:800;line-height:1.55;margin-bottom:7px}
+.party-detail{font-size:10.5px;line-height:1.7;overflow-wrap:anywhere}
+.customer-card{border-bottom:2px solid #7888ad}
+.issuer-card{background:#f1f3f7;border:1px solid #d8deea;border-left:4px solid #7888ad}
+.issuer-card .party-name{font-size:17px;color:#263b63}
+.doc-meta{font-size:10px;text-align:right;margin:5px 0;color:#505b6c}
+.doc-subject{font-size:12px;font-weight:bold;margin:8px 0}
+.doc-greeting{font-size:10px;margin:8px 0 4px}
+.doc-grand-total{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #7888ad;padding:7px 10px;margin:8px 0 12px;font-weight:bold}
+.doc-grand-total strong{font-size:21px;color:#172033}
+.doc table{width:100%;border-collapse:collapse;margin:12px 0;font-size:11px}
+.doc th{background:#7888ad;color:#fff;font-weight:bold;padding:8px 7px;text-align:center}
+.doc td{border:0;border-bottom:1px solid #e0e3e9;padding:8px 7px}
+.doc tbody tr:nth-child(even){background:#f0f1f3}
+.doc .num{text-align:right;white-space:nowrap}
+.doc .sum{width:48%;margin:10px 0 12px auto;font-size:11px}
+.doc .sum div{display:flex;justify-content:space-between;padding:5px 7px;border-bottom:1px solid #e0e3e9}
+.doc .sum .last{font-size:14px;font-weight:bold;border-bottom:2px solid #7888ad}
+.doc .memo{margin-top:18px;border:1px solid #d5dae3;padding:0 10px 12px;font-size:11px;min-height:55px}
+.doc .memo strong{display:block;background:#7888ad;color:#fff;margin:0 -10px 8px;padding:5px 7px}
+.doc .stamp{margin:12px 0 0 auto;border:1px solid #7888ad;width:90px;height:55px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#596985}
+.receipt-statement{text-align:center;font-size:19px;font-weight:bold;margin:18px}
+@media print{
+ body{background:#fff}
+ .no-print,header,.tabs{display:none!important}
+ .wrap{padding:0;max-width:none}
+ .printdoc{display:block!important}
+ .panel{display:none!important}
+ #printArea{display:block!important}
+ .card{box-shadow:none;border:0;padding:0;margin:0}
+ .doc{padding:5mm}
+ .doc-parties{grid-template-columns:1.15fr .85fr;break-inside:avoid}
+ .party-card{break-inside:avoid}
+ .doc-banner,.party-label,.doc th,.doc .memo strong{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .doc table{break-inside:auto}
+ .doc tr{break-inside:avoid}
+}
+</style></head>
+<body class="app-locked">
+<div id="lockScreen"><div class="lock-card"><h2 id="lockTitle">データ保護の設定</h2>
+<p id="lockMessage">保存データを暗号化します。8文字以上のパスワードを設定してください。忘れると復元できません。</p>
+<label id="lockPasswordLabel" for="lockPassword">パスワード</label><input id="lockPassword" type="password" autocomplete="current-password" placeholder="8文字以上">
+<div id="lockConfirmWrap"><label for="lockPasswordConfirm">パスワード（確認）</label><input id="lockPasswordConfirm" type="password" autocomplete="new-password" placeholder="同じパスワードを再入力"></div>
+<button class="btn full" id="unlockButton">暗号化して開始</button><p id="lockError" role="alert" style="color:#b42318"></p></div></div>
+<header><h1>工事かんたん請求</h1><small>追加工事の選択・請求書・領収書</small></header>
+<div class="wrap">
+<nav class="tabs no-print"><button class="tab active" data-tab="new">新規工事</button><button class="tab" data-tab="history">工事履歴</button><button class="tab" data-tab="items">項目・料金</button><button class="tab" data-tab="settings">会社・設定</button></nav>
+<section id="new" class="panel active">
+<div class="card no-print"><h2>① お客様・工事情報</h2><div class="grid"><div class="field"><label>お客様区分</label><select id="custType"><option value="個人">個人</option><option value="法人">法人</option></select></div><div class="field"><label>工事日</label><input id="workDate" type="date"></div></div><div class="field"><label id="custNameLabel">お客様氏名</label><input id="custName" placeholder="例：山田 太郎"></div><div id="corpFields" class="hidden"><div class="field"><label>登録済み法人から選択</label><select id="corpSelect"><option value="">新しい法人を入力</option></select><div class="hint">一度請求書を保存した法人は、次回からここで選べます。</div></div><div class="field"><label>部署名</label><input id="dept" placeholder="部署名（任意）"></div><div class="field"><label>担当者名</label><input id="person" placeholder="担当者名（任意）"></div></div><div class="grid"><div class="field"><label>住所</label><input id="custAddress" placeholder="住所"></div><div class="field"><label>電話番号</label><input id="custPhone" placeholder="電話番号"></div></div><div class="field"><label>工事メモ（任意）</label><textarea id="workMemo" placeholder="工事内容・連絡事項"></textarea></div></div>
+<div class="card no-print"><h2>② 追加工事を選ぶ</h2><div class="hint">工事項目をタップすると、その場で緑色の「追加済み」に変わり、カートの数量も更新されます。</div><div id="addFeedback" class="add-feedback" role="status" aria-live="polite"><span id="addFeedbackText"></span><button type="button" id="goCart">カートを見る ↓</button></div><div id="catalog"></div></div>
+<div class="card no-print" id="cartCard"><h2>③ 選択した工事（カート）<span id="cartCount" class="cart-count">0</span></h2><div id="cart"><div class="empty">追加工事を選択してください</div></div><div class="total"><div class="totalline"><span>税抜小計</span><strong id="subtotal">0円</strong></div><div class="totalline"><span>消費税（<span id="taxLabel">10</span>％）</span><strong id="taxAmount">0円</strong></div><div class="totalline grand"><span>請求合計</span><span id="grandTotal">0円</span></div></div></div>
+<div class="card no-print"><h2>④ 工事を保存して書類を作成</h2><div class="actions"><button class="btn" id="saveInvoice">工事を保存・請求書PDFを作成</button></div><p class="hint">見積書・請求書は、保存後に「工事履歴」からそれぞれPDFを作成できます。</p><div class="notice">領収書は入金確認後に発行します。工事履歴から「入金済みにする」を選択すると、領収書PDFを作成できます。</div></div>
+</section>
+<section id="history" class="panel"><div class="card"><h2>工事履歴</h2><div class="hint">保存した工事から、見積書・請求書・領収書の3種類をPDFで作成できます。領収書は入金済みの工事のみ発行できます。</div><div id="historyList" class="empty">まだ保存された工事はありません。</div></div></section>
+<section id="items" class="panel"><div class="card"><h2>追加工事項目・料金の編集</h2><div class="field"><label>カテゴリー</label><input id="newCat" placeholder="例：配管関係"></div><div class="field"><label>工事項目名</label><input id="newItem" placeholder="例：配管延長"></div><div class="field"><label>税抜単価（円）</label><input id="newPrice" type="number" min="0" placeholder="金額未確定なら空欄"></div><button class="btn full" id="addItem">項目を追加</button><div id="manageItems"></div></div></section>
+<section id="settings" class="panel"><div class="card"><h2>会社情報・税率</h2><div class="field"><label>会社名</label><input id="company" placeholder="会社名"></div><div class="field"><label>住所</label><input id="companyAddress" placeholder="会社住所"></div><div class="field"><label>電話番号</label><input id="companyPhone" placeholder="電話番号"></div><div class="field"><label>メールアドレス</label><input id="companyEmail" type="email" placeholder="会社メールアドレス"></div><div class="field"><label>インボイス登録番号</label><input id="invoiceNumber" placeholder="Tから始まる登録番号"></div><div class="field"><label>消費税率（％）</label><input id="taxRate" type="number" min="0" max="100" step="0.1" value="10"></div><button class="btn full" id="saveSettings">設定を保存</button></div><div class="card"><h2>暗号化バックアップ・復元</h2><p class="hint">データは端末内のブラウザに保存します。スマホとPCは自動同期せず、暗号化したバックアップファイルを使って手動で移します。初回に共通パスワードを設定してください。パスワードそのものはアプリに保存しません。</p><div class="field"><label>共通バックアップパスワード（8文字以上）</label><input id="backupPassword" type="password" autocomplete="new-password" placeholder="初回設定するパスワード"></div><div class="field"><label>パスワード確認</label><input id="backupPassword2" type="password" autocomplete="new-password" placeholder="同じパスワードを再入力"></div><button class="btn secondary full" id="setBackupPassword">この端末にパスワード確認情報を登録</button><p id="backupPasswordStatus" class="hint">パスワード未設定</p><div class="actions"><button class="btn" id="backup">暗号化バックアップを書き出す</button><button class="btn secondary" id="emailBackup">メールに添付して送る</button></div><div class="actions" style="margin-top:8px"><button class="btn gray" id="restoreBtn">バックアップを読み込む</button><input id="restoreFile" type="file" accept=".kbackup,.json,application/json" class="hidden"></div><p class="hint">メール添付は端末の共有メニューを開きます。メールアプリを選び、宛先を確認して送信してください。共有メニューに対応しない場合はファイルを保存し、メールに手動添付します。クラウドへ保存する場合も暗号化ファイルだけを保存してください。</p><div class="notice">パスワードを忘れると復元できません。パスワードはバックアップファイルとは別の安全な場所に保管してください。暗号化バックアップには法人情報・工事履歴・設定・項目情報が含まれます。</div></div><div class="card"><h2>Dropbox同期・整理</h2><p class="hint">Dropboxの同期フォルダを確認します。削除対象は実行日から1か月より前のファイルです。日時が不明なファイルは削除対象にしません。</p><p id="dropboxStatus" class="hint">未接続</p><button class="btn full" id="dropboxConnect">Dropboxに接続</button><button class="btn secondary full" id="dropboxRefresh" style="margin-top:8px">ファイル一覧を再確認</button><div id="dropboxArchivePreview" class="hint"></div><p class="hint">対象フォルダ：工事かんたん請求_同期</p><div class="actions" style="margin-top:8px"><button class="btn secondary" id="dropboxDownloadSync">Dropboxから取得</button><button class="btn" id="dropboxUploadSync">Dropboxへ保存</button></div><p class="hint">同期データは専用パスワードで暗号化します。パスワードはDropboxにも端末にも保存しません。新しい端末は最初にDropboxから取得してください。</p><div class="notice">ZIP保存と削除機能を準備中です。削除対象は同期フォルダ内のファイル（サブフォルダ内を含む）です。削除前にZIPを保存し、保存確認と最終確認が必要です。</div></div><div class="notice">初期の工事項目は一般的な候補です。価格・工事内容・税区分は実際の会社ルールに合わせて確認してからご利用ください。</div></section>
+<div id="printArea" class="printdoc hidden"></div>
+</div>
+<script>
+const defaultItems=[
+['配管関係','冷媒配管延長',null],['配管関係','ドレンホース延長',null],['配管関係','配管化粧テープ巻き直し',null],['配管関係','既設配管再利用',null],['化粧カバー','室内化粧カバー取付',null],['化粧カバー','室外化粧カバー取付',null],['化粧カバー','化粧カバー延長',null],['穴あけ関係','木造壁穴あけ',null],['穴あけ関係','ALC壁穴あけ',null],['穴あけ関係','コンクリート穴あけ',null],['電気関係','コンセント交換',null],['電気関係','電圧切替',null],['電気関係','専用回路工事',null],['室外機設置','屋根置き金具設置',null],['室外機設置','壁面金具設置',null],['室外機設置','二段置き金具設置',null],['室外機設置','室外機吊り下げ',null],['その他','エアコン取り外し',null],['その他','既設エアコン処分',null],['その他','運搬費',null],['その他','高所作業費',null]
+].map((x,i)=>({id:'d'+i,category:x[0],name:x[1],price:x[2]}));
+let data=load();let cart=[];let activeJob=null;let selectedCorporationId='';
+function normalizeData(d){d=d||{items:defaultItems,settings:{tax:10,company:'',companyAddress:'',companyPhone:'',companyEmail:'',invoiceNumber:''},jobs:[]};d.items=d.items||defaultItems;d.settings=d.settings||{tax:10,company:'',companyAddress:'',companyPhone:'',companyEmail:'',invoiceNumber:''};d.settings.companyEmail=d.settings.companyEmail||'';d.settings.invoiceNumber=d.settings.invoiceNumber||'';d.jobs=d.jobs||[];d.corporations=d.corporations||[];d.jobs.forEach(j=>{let c=j.customer;if(c&&c.type==='法人'&&c.name&&!d.corporations.some(x=>x.name===c.name&&x.address===c.address)){d.corporations.push({id:'corp_'+(j.id||Date.now()),...c})}});return d}
+function load(){let d;try{d=JSON.parse(localStorage.getItem('koujiAppData'))}catch(e){}return normalizeData(d)}
+let storageKey=null,persistQueue=Promise.resolve();
+function persist(){if(!storageKey)throw new Error('データ保護のロックが解除されていません');const snapshot=JSON.stringify(data);persistQueue=persistQueue.catch(()=>{}).then(async()=>{const iv=randomBytes(12),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},storageKey,new TextEncoder().encode(snapshot));localStorage.setItem('koujiAppDataEncrypted',JSON.stringify({format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:getPasswordConfig().salt,iv:b64(iv),ciphertext:b64(cipher)}));localStorage.removeItem('koujiAppData')});return persistQueue}
+const $=id=>document.getElementById(id);const yen=n=>(Number(n)||0).toLocaleString('ja-JP')+'円';const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function tab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===name));if(name==='history')renderHistory();if(name==='items')renderManage()}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+$('workDate').value=new Date().toISOString().slice(0,10);
+$('custType').onchange=()=>{$('corpFields').classList.toggle('hidden',$('custType').value!=='法人');$('custNameLabel').textContent=$('custType').value==='法人'?'会社名':'お客様氏名';if($('custType').value==='法人')renderCorporations();else selectedCorporationId=''};
+function renderCorporations(){let sel=$('corpSelect');if(!sel)return;let current=selectedCorporationId;sel.innerHTML='<option value="">新しい法人を入力</option>'+data.corporations.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}${c.address?' ／ '+esc(c.address):''}</option>`).join('');if(current&&data.corporations.some(c=>c.id===current))sel.value=current;else sel.value=''}
+$('corpSelect').onchange=()=>{let c=data.corporations.find(x=>x.id===$('corpSelect').value);selectedCorporationId=c?c.id:'';if(!c){$('custName').value='';$('dept').value='';$('person').value='';$('custAddress').value='';$('custPhone').value='';return}$('custName').value=c.name||'';$('dept').value=c.dept||'';$('person').value=c.person||'';$('custAddress').value=c.address||'';$('custPhone').value=c.phone||''};
+function saveCorporation(c){if(!c||c.type!=='法人'||!c.name)return;let old=selectedCorporationId?data.corporations.find(x=>x.id===selectedCorporationId):data.corporations.find(x=>x.name===c.name&&x.address===c.address);if(old){Object.assign(old,c)}else{old={id:'corp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),...c};data.corporations.push(old)}selectedCorporationId=old.id;renderCorporations();$('corpSelect').value=old.id}
+function renderCatalog(){let groups={};data.items.forEach(it=>(groups[it.category]??=[]).push(it));$('catalog').innerHTML=Object.entries(groups).map(([cat,its])=>`<div class="category">${esc(cat)}</div><div class="itemgrid">${its.map(it=>{let inCart=cart.find(x=>x.id===it.id);return `<button class="item ${inCart?'added':''}" data-id="${esc(it.id)}" aria-label="${esc(it.name)}をカートに追加"><strong>${esc(it.name)}</strong><span>${it.price==null?'料金未設定':'税抜 '+yen(it.price)}</span><em>${inCart?'✓ 追加済み × '+inCart.qty:'＋ タップして追加'}</em></button>`}).join('')}</div>`).join('');$('catalog').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>addCart(b.dataset.id))}
+function addCart(id){let it=data.items.find(x=>x.id===id);if(!it)return;let c=cart.find(x=>x.id===id);if(c)c.qty++;else cart.push({id,name:it.name,price:it.price??0,qty:1,unset:it.price==null});renderCart();renderCatalog();$('addFeedbackText').textContent='✓ '+it.name+' をカートに追加しました（'+cart.reduce((n,x)=>n+x.qty,0)+'点）';$('addFeedback').classList.add('show')}
+$('goCart').onclick=()=>$('cartCard').scrollIntoView({behavior:'smooth',block:'start'});
+function totals(){let sub=cart.reduce((s,x)=>s+x.price*x.qty,0),tax=Math.round(sub*Number(data.settings.tax||0)/100);return{sub,tax,total:sub+tax}}
+function renderCart(){if(!cart.length){$('cart').innerHTML='<div class="empty">追加工事を選択してください</div>'}else{$('cart').innerHTML=cart.map((x,i)=>`<div class="cartrow"><div style="flex:1"><strong>${esc(x.name)}</strong><div class="hint">${x.unset?'<span class="danger">単価未設定</span>':yen(x.price)+' × '+x.qty}</div><div class="field" style="margin:5px 0"><input aria-label="単価" type="number" min="0" value="${x.price}" data-price="${i}" placeholder="税抜単価" style="max-width:125px;padding:7px;min-height:36px"></div></div><div class="qty"><button data-minus="${i}">−</button><input type="number" min="1" value="${x.qty}" data-qty="${i}"><button data-plus="${i}">＋</button></div><button class="btn red" style="padding:8px" data-del="${i}">削除</button></div>`).join('')}
+$('cart').querySelectorAll('[data-minus]').forEach(b=>b.onclick=()=>{let i=+b.dataset.minus;cart[i].qty=Math.max(1,cart[i].qty-1);renderCart()});$('cart').querySelectorAll('[data-plus]').forEach(b=>b.onclick=()=>{cart[+b.dataset.plus].qty++;renderCart()});$('cart').querySelectorAll('[data-qty]').forEach(b=>b.onchange=()=>{cart[+b.dataset.qty].qty=Math.max(1,Number(b.value)||1);renderCart()});$('cart').querySelectorAll('[data-price]').forEach(b=>b.onchange=()=>{let x=cart[+b.dataset.price];x.price=Math.max(0,Number(b.value)||0);x.unset=false;renderCart()});$('cart').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{cart.splice(+b.dataset.del,1);renderCart()});let t=totals();$('subtotal').textContent=yen(t.sub);$('taxAmount').textContent=yen(t.tax);$('grandTotal').textContent=yen(t.total);$('taxLabel').textContent=data.settings.tax;$('cartCount').textContent=cart.reduce((n,x)=>n+x.qty,0)}
+function getCustomer(){return{type:$('custType').value,name:$('custName').value.trim(),dept:$('dept').value.trim(),person:$('person').value.trim(),address:$('custAddress').value.trim(),phone:$('custPhone').value.trim()}}
+function createJob(){let c=getCustomer();if(!c.name){alert('お客様名・会社名を入力してください');return null}if(!cart.length){alert('追加工事を1件以上選択してください');return null}if(cart.some(x=>x.unset)){alert('単価未設定の項目があります。単価を入力してください');return null}let t=totals();return{id:'K'+Date.now(),number:'K-'+new Date().getFullYear()+'-'+String(data.jobs.length+1).padStart(4,'0'),date:$('workDate').value,customer:c,memo:$('workMemo').value,items:cart.map(x=>({...x})),taxRate:Number(data.settings.tax),issuer:{company:data.settings.company||'',companyAddress:data.settings.companyAddress||'',companyPhone:data.settings.companyPhone||'',companyEmail:data.settings.companyEmail||'',invoiceNumber:data.settings.invoiceNumber||''},subtotal:t.sub,tax:t.tax,total:t.total,paid:false,paidDate:'',paymentMethod:'',createdAt:new Date().toISOString()}}
+$('saveInvoice').onclick=()=>{let j=createJob();if(!j)return;data.jobs.unshift(j);saveCorporation(j.customer);persist();activeJob=j;showDocument(j,'invoice');cart=[];renderCart();alert('請求書データを保存し、PDFを作成しました。')};
+function issuer(j){let x=j.issuer||{};let email=x.companyEmail||data.settings.companyEmail||'',inv=x.invoiceNumber||data.settings.invoiceNumber||'';return [x.company||data.settings.company||'',x.companyAddress||data.settings.companyAddress||'',x.companyPhone||data.settings.companyPhone||'',email?'メール：'+email:'',inv?'インボイス登録番号：'+inv:''].filter(Boolean).join('\n')}
+
+function showDocument(j,type){generatePdfDocument(j,type).catch(e=>{console.error(e);alert('PDFを作成できませんでした。ブラウザを更新して、もう一度お試しください。')})}
+function pdfText(ctx,text,x,y,maxWidth,lineHeight,font){
+ ctx.font=font;let lines=[],line='';
+ for(const ch of String(text??'')){const next=line+ch;if(ctx.measureText(next).width>maxWidth&&line){lines.push(line);line=ch}else line=next}
+ if(line)lines.push(line);
+ lines.forEach((v,i)=>ctx.fillText(v,x,y+i*lineHeight));
+ return lines.length*lineHeight;
+}
+function pdfCanvasPage(j,type,items,pageIndex,pageCount){
+ const W=1240,H=1754,cv=document.createElement('canvas');cv.width=W;cv.height=H;
+ const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,W,H);
+ const blue='#7888ad',dark='#172033',muted='#596579',pale='#f1f3f7';
+ const isReceipt=type==='receipt',isQuote=type==='estimate';
+ const title=isReceipt?'領 収 書':isQuote?'見 積 書':'請 求 書';
+ const amount=isReceipt?(j.receiptAmount??j.total):j.total;
+ const issuer=j.issuer||{};
+ const issuerName=issuer.company||data.settings.company||'';
+ const issuerAddress=issuer.companyAddress||data.settings.companyAddress||'';
+ const issuerPhone=issuer.companyPhone||data.settings.companyPhone||'';
+ const issuerEmail=issuer.companyEmail||data.settings.companyEmail||'';
+ const invoiceNo=issuer.invoiceNumber||data.settings.invoiceNumber||'';
+ const customer=j.customer||{};
+ const dateText=isReceipt?(j.paidDate||''):new Date().toLocaleDateString('ja-JP');
+ const left=82,right=1158,contentW=right-left;
+ c.fillStyle=blue;c.fillRect(left,70,contentW,94);c.fillStyle='#fff';
+ c.font='bold 42px sans-serif';c.fillText(title,left+24,132);
+ c.textAlign='right';c.font='20px sans-serif';
+ c.fillText((isReceipt?'領収日：':isQuote?'見積日：':'発行日：')+dateText,right-22,112);
+ c.fillText('番号：'+(j.number||''),right-22,145);c.textAlign='left';
+ // Customer card
+ const cardY=192,cardH=260,mid=620;
+ c.strokeStyle='#7888ad';c.lineWidth=2;c.strokeRect(left,cardY,510,cardH);
+ c.fillStyle=blue;c.fillRect(left,cardY,510,42);c.fillStyle='#fff';c.font='bold 19px sans-serif';c.fillText('お客様・お届け先',left+16,cardY+28);
+ c.fillStyle=dark;c.font='bold 28px sans-serif';
+ let custTitle=customer.type==='法人'?(customer.name||'')+' 御中':(customer.name||'')+' 様';
+ let cy=cardY+88;cy+=pdfText(c,custTitle,left+18,cy,470,36,'bold 27px sans-serif');
+ c.fillStyle=muted;c.font='20px sans-serif';
+ cy+=12;cy+=pdfText(c,customer.address||'',left+18,cy,470,28,'20px sans-serif');
+ if(customer.dept){cy+=6;cy+=pdfText(c,'部署：'+customer.dept,left+18,cy,470,26,'19px sans-serif')}
+ if(customer.person){cy+=6;cy+=pdfText(c,'担当：'+customer.person+' 様',left+18,cy,470,26,'19px sans-serif')}
+ if(customer.phone){cy+=6;pdfText(c,'TEL：'+customer.phone,left+18,cy,470,26,'19px sans-serif')}
+ // Issuer card
+ c.fillStyle=pale;c.fillRect(mid+18,cardY,520,cardH);c.strokeStyle=blue;c.lineWidth=3;c.strokeRect(mid+18,cardY,520,cardH);
+ c.fillStyle=blue;c.fillRect(mid+18,cardY,520,42);c.fillStyle='#fff';c.font='bold 19px sans-serif';c.fillText('発行者・自社情報',mid+34,cardY+28);
+ let iy=cardY+88;c.fillStyle=dark;
+ iy+=pdfText(c,issuerName,mid+36,iy,480,34,'bold 27px sans-serif');
+ c.fillStyle=muted;c.font='19px sans-serif';iy+=10;
+ for(const line of [issuerAddress,issuerPhone?'TEL：'+issuerPhone:'',issuerEmail?'MAIL：'+issuerEmail:'',invoiceNo?'インボイス登録番号：'+invoiceNo:''].filter(Boolean)){iy+=pdfText(c,line,mid+36,iy,480,27,'19px sans-serif')+4}
+ // Subject and amount
+ let y=490;c.fillStyle=dark;c.font='bold 23px sans-serif';
+ c.fillText(isReceipt?'領収内容':isQuote?'件名：エアコン工事のお見積り':'件名：エアコン工事代',left,y);
+ c.fillStyle=muted;c.font='19px sans-serif';c.fillText(isReceipt?'下記の金額を領収いたしました。':isQuote?'下記の通りお見積り申し上げます。':'下記の通りご請求申し上げます。',left,y+42);
+ c.strokeStyle=blue;c.lineWidth=3;c.beginPath();c.moveTo(left,y+112);c.lineTo(right,y+112);c.stroke();
+ c.fillStyle=dark;c.font='bold 25px sans-serif';c.fillText(isReceipt?'領収金額':isQuote?'御見積金額':'御請求金額',left+18,y+91);
+ c.textAlign='right';c.font='bold 38px sans-serif';c.fillText('¥'+Number(amount||0).toLocaleString('ja-JP'),right-20,y+94);c.textAlign='left';
+ // Item table
+ let ty=635, rowH=48;
+ c.fillStyle=blue;c.fillRect(left,ty,contentW,52);c.fillStyle='#fff';c.font='bold 19px sans-serif';
+ c.fillText('工事項目・品名',left+14,ty+33);c.textAlign='right';c.fillText('数量',right-405,ty+33);c.fillText('単価',right-205,ty+33);c.fillText('金額',right-18,ty+33);c.textAlign='left';
+ let iyrow=ty+52;
+ items.forEach((it,i)=>{
+   if(i%2===1){c.fillStyle='#f0f1f3';c.fillRect(left,iyrow,contentW,rowH)}
+   c.fillStyle=dark;c.font='19px sans-serif';pdfText(c,it.name,left+14,iyrow+31,520,23,'19px sans-serif');
+   c.textAlign='right';c.fillText(String(it.qty),right-405,iyrow+31);c.fillText('¥'+Number(it.price||0).toLocaleString('ja-JP'),right-205,iyrow+31);c.fillText('¥'+Number((it.price||0)*(it.qty||0)).toLocaleString('ja-JP'),right-18,iyrow+31);c.textAlign='left';
+   c.strokeStyle='#dfe3e9';c.lineWidth=1;c.beginPath();c.moveTo(left,iyrow+rowH);c.lineTo(right,iyrow+rowH);c.stroke();iyrow+=rowH;
+ });
+ if(pageIndex===pageCount-1){
+   let sy=Math.max(iyrow+28,iyrow+28);
+   c.fillStyle=dark;c.font='20px sans-serif';c.textAlign='right';
+   c.fillText('小計',right-240,sy);c.fillText('¥'+Number(j.subtotal||0).toLocaleString('ja-JP'),right-18,sy);
+   c.fillText('消費税（'+(j.taxRate??10)+'%）',right-240,sy+42);c.fillText('¥'+Number(j.tax||0).toLocaleString('ja-JP'),right-18,sy+42);
+   c.strokeStyle=blue;c.lineWidth=3;c.beginPath();c.moveTo(right-470,sy+62);c.lineTo(right,sy+62);c.stroke();
+   c.fillStyle=dark;c.font='bold 25px sans-serif';c.fillText('合計金額',right-240,sy+100);c.font='bold 29px sans-serif';c.fillText('¥'+Number(amount||0).toLocaleString('ja-JP'),right-18,sy+100);c.textAlign='left';
+   let noteY=sy+145;
+   if(isReceipt){c.fillStyle=muted;c.font='18px sans-serif';c.fillText('入金日：'+(j.paidDate||'')+'　お支払方法：'+(j.paymentMethod||''),left,noteY);noteY+=42}
+   if(j.date){c.fillStyle=muted;c.font='18px sans-serif';c.fillText('工事日：'+j.date,left,noteY);noteY+=38}
+   c.fillStyle=blue;c.fillRect(left,noteY,contentW,38);c.fillStyle='#fff';c.font='bold 18px sans-serif';c.fillText('特記事項・備考',left+12,noteY+26);
+   c.fillStyle=dark;c.font='18px sans-serif';pdfText(c,j.memo||'',left+12,noteY+70,contentW-24,26,'18px sans-serif');
+   if(isReceipt){c.strokeStyle=blue;c.lineWidth=2;c.strokeRect(right-150,H-170,120,90);c.fillStyle=muted;c.font='16px sans-serif';c.textAlign='center';c.fillText('領収印',right-90,H-120);c.textAlign='left'}
+ }
+ if(pageCount>1){c.fillStyle=muted;c.font='15px sans-serif';c.textAlign='center';c.fillText((pageIndex+1)+' / '+pageCount,W/2,H-35);c.textAlign='left'}
+ return cv;
+}
+async function canvasJpeg(canvas){return await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('canvas export failed')),'image/jpeg',0.92))}
+async function buildPdfFromCanvases(canvases){
+ const enc=new TextEncoder(),parts=[],offsets=[0];let length=0;
+ const addBytes=b=>{parts.push(b);length+=b.length};
+ const addText=t=>addBytes(enc.encode(t));
+ const pageCount=canvases.length,objects=[];
+ objects[1]='<< /Type /Catalog /Pages 2 0 R >>';
+ objects[2]='<< /Type /Pages /Kids ['+canvases.map((_,i)=>(3+i*3)+' 0 R').join(' ')+'] /Count '+pageCount+' >>';
+ const imageBlobs=await Promise.all(canvases.map(canvasJpeg));
+ for(let i=0;i<pageCount;i++){
+   const base=3+i*3,blob=imageBlobs[i],bytes=new Uint8Array(await blob.arrayBuffer()),imgId=base+2,contentId=base+1;
+   objects[base]=`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im${i} ${imgId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+   const stream=`q\n595.28 0 0 841.89 0 0 cm\n/Im${i} Do\nQ`;
+   objects[contentId]=`<< /Length ${enc.encode(stream).length} >>\nstream\n${stream}\nendstream`;
+   objects[imgId]={bytes,dict:`<< /Type /XObject /Subtype /Image /Width ${canvases[i].width} /Height ${canvases[i].height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>`};
+ }
+ addText('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+ for(let id=1;id<objects.length;id++){
+   offsets[id]=length;addText(id+' 0 obj\n');
+   const o=objects[id];
+   if(typeof o==='string')addText(o+'\n');
+   else{addText(o.dict+'\nstream\n');addBytes(o.bytes);addText('\nendstream\n')}
+   addText('endobj\n');
+ }
+ const xref=length;addText('xref\n0 '+objects.length+'\n0000000000 65535 f \n');
+ for(let id=1;id<objects.length;id++)addText(String(offsets[id]).padStart(10,'0')+' 00000 n \n');
+ addText('trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
+ return new Blob(parts,{type:'application/pdf'});
+}
+async function generatePdfDocument(j,type){
+ const items=j.items||[],perPage=14,pageCount=Math.max(1,Math.ceil(items.length/perPage)),canvases=[];
+ for(let p=0;p<pageCount;p++)canvases.push(pdfCanvasPage(j,type,items.slice(p*perPage,(p+1)*perPage),p,pageCount));
+ const blob=await buildPdfFromCanvases(canvases);
+ const safe=String(j.number||'document').replace(/[^\w-]/g,'_');
+ const title=type==='receipt'?'領収書':type==='estimate'?'見積書':'請求書';
+ const filename=title+'_'+safe+'.pdf';
+ const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+function renderHistory(){if(!data.jobs.length){$('historyList').innerHTML='<div class="empty">まだ保存された工事はありません。</div>';return}$('historyList').innerHTML=data.jobs.map(j=>`<div class="historyrow"><div style="flex:1"><strong>${esc(j.customer.name)}</strong><div class="hint">${esc(j.number)} ・ ${esc(j.date)} ・ ${yen(j.total)}</div><span class="pill">${j.paid?'入金済み':'未入金'}</span></div><div class="actions" style="flex:0 0 210px;flex-wrap:wrap"><button class="btn secondary" data-est="${j.id}" style="padding:8px;font-size:12px">見積書PDF</button><button class="btn secondary" data-inv="${j.id}" style="padding:8px;font-size:12px">請求書PDF</button><button class="btn green" data-rec="${j.id}" ${j.paid?'':'disabled title="入金済み後に発行できます"'} style="padding:8px;font-size:12px">領収書PDF</button>${j.paid?'':`<button class="btn" data-paid="${j.id}" style="padding:8px;font-size:12px">入金済みにする</button>`}</div></div>`).join('');$('historyList').querySelectorAll('[data-est]').forEach(b=>b.onclick=()=>generatePdfDocument(data.jobs.find(j=>j.id===b.dataset.est),'estimate').catch(e=>{console.error(e);alert('PDFを作成できませんでした')}));$('historyList').querySelectorAll('[data-inv]').forEach(b=>b.onclick=()=>generatePdfDocument(data.jobs.find(j=>j.id===b.dataset.inv),'invoice').catch(e=>{console.error(e);alert('PDFを作成できませんでした')}));$('historyList').querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>generatePdfDocument(data.jobs.find(j=>j.id===b.dataset.rec),'receipt').catch(e=>{console.error(e);alert('PDFを作成できませんでした')}));$('historyList').querySelectorAll('[data-paid]').forEach(b=>b.onclick=()=>markPaid(b.dataset.paid))}
+function markPaid(id){let j=data.jobs.find(x=>x.id===id);if(!j)return;let method=prompt('入金方法を入力してください（現金 または 銀行振込）','現金');if(!method)return;if(!['現金','銀行振込'].includes(method)){alert('「現金」または「銀行振込」と入力してください');return}let d=prompt('入金日を入力してください（YYYY-MM-DD）',new Date().toISOString().slice(0,10));if(!d)return;j.paid=true;j.paymentMethod=method;j.paidDate=d;j.receiptAmount=j.total;persist();renderHistory();if(confirm('入金済みとして保存しました。領収書PDFを作成しますか？'))generatePdfDocument(j,'receipt')}
+function renderManage(){$('manageItems').innerHTML='<h3 style="font-size:15px;margin-top:20px">登録済み項目</h3>'+data.items.map((x,i)=>`<div class="cartrow"><div style="flex:1"><strong>${esc(x.name)}</strong><div class="hint">${esc(x.category)} ・ ${x.price==null?'未設定':yen(x.price)}</div></div><button class="btn secondary" data-edit="${i}" style="padding:8px">編集</button><button class="btn red" data-remove="${i}" style="padding:8px">削除</button></div>`).join('');$('manageItems').querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{let x=data.items[+b.dataset.edit];let n=prompt('工事項目名',x.name);if(n===null)return;let p=prompt('税抜単価（空欄で未設定）',x.price??'');if(p===null)return;x.name=n;x.price=p.trim()===''?null:Math.max(0,Number(p)||0);persist();renderManage();renderCatalog()});$('manageItems').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{if(confirm('この項目を削除しますか？')){data.items.splice(+b.dataset.remove,1);persist();renderManage();renderCatalog()}})}
+$('addItem').onclick=()=>{let cat=$('newCat').value.trim(),name=$('newItem').value.trim(),p=$('newPrice').value;if(!cat||!name){alert('カテゴリーと工事項目名を入力してください');return}data.items.push({id:'u'+Date.now(),category:cat,name,price:p===''?null:Math.max(0,Number(p)||0)});persist();$('newCat').value=$('newItem').value=$('newPrice').value='';renderManage();renderCatalog();alert('項目を追加しました')};
+function loadSettings(){$('company').value=data.settings.company||'';$('companyAddress').value=data.settings.companyAddress||'';$('companyPhone').value=data.settings.companyPhone||'';$('companyEmail').value=data.settings.companyEmail||'';$('invoiceNumber').value=data.settings.invoiceNumber||'';$('taxRate').value=data.settings.tax??10;$('taxLabel').textContent=data.settings.tax??10}
+$('saveSettings').onclick=()=>{let t=Number($('taxRate').value);if(!Number.isFinite(t)||t<0||t>100){alert('税率は0〜100の範囲で入力してください');return}data.settings={...data.settings,company:$('company').value.trim(),companyAddress:$('companyAddress').value.trim(),companyPhone:$('companyPhone').value.trim(),companyEmail:$('companyEmail').value.trim(),invoiceNumber:$('invoiceNumber').value.trim(),tax:t};persist();$('taxLabel').textContent=t;renderCart();alert('設定を保存しました')};
+const BACKUP_ITERATIONS=310000;
+const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes)));
+const unb64=str=>Uint8Array.from(atob(str),c=>c.charCodeAt(0));
+const randomBytes=n=>crypto.getRandomValues(new Uint8Array(n));
+async function deriveAesKey(password,salt,iterations){let material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function passwordVerifier(password,salt,iterations){let material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);let bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,256);return b64(bits)}
+function constantTimeEqual(a,b){if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;let x=0;for(let i=0;i<a.length;i++)x|=a.charCodeAt(i)^b.charCodeAt(i);return x===0}
+function getPasswordConfig(){try{return JSON.parse(localStorage.getItem('koujiBackupPasswordConfig')||'null')}catch(e){return null}}
+function updatePasswordStatus(){let c=getPasswordConfig();$('backupPasswordStatus').textContent=c?'この端末にはパスワード確認情報が登録済みです。別端末では暗号化バックアップの読み込み時に同じパスワードを入力してください。':'パスワード未設定'}
+$('setBackupPassword').onclick=async()=>{let p=$('backupPassword').value,p2=$('backupPassword2').value;if(p.length<8){alert('安全のため8文字以上のパスワードを設定してください');return}if(p!==p2){alert('確認用パスワードが一致しません');return}try{let salt=randomBytes(16),verifier=await passwordVerifier(p,salt,BACKUP_ITERATIONS),key=await deriveAesKey(p,salt,BACKUP_ITERATIONS),iv=randomBytes(12),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(data)));localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS}));localStorage.setItem('koujiAppDataEncrypted',JSON.stringify({format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)}));localStorage.removeItem('koujiAppData');storageKey=key;$('backupPassword').value=$('backupPassword2').value='';updatePasswordStatus();alert('保存データの暗号化パスワードを更新しました。次回起動時から新しいパスワードが必要です。')}catch(e){alert('パスワードを更新できませんでした：'+e.message)}};
+async function makeEncryptedBackup(){
+ if(!crypto?.subtle)throw Error('暗号化機能が使えません。HTTPS対応のブラウザで開いてください。');
+ const cfg=getPasswordConfig();
+ if(!cfg){alert('先に共通バックアップパスワードを設定してください');return null;}
+ const password=prompt('初回に設定した共通バックアップパスワードを入力してください');
+ if(password===null)return null;
+ const check=await passwordVerifier(password,unb64(cfg.salt),cfg.iterations);
+ if(!constantTimeEqual(check,cfg.verifier)){alert('パスワードが違います');return null;}
+ await persistQueue;
+ const salt=randomBytes(16),iv=randomBytes(12),key=await deriveAesKey(password,salt,BACKUP_ITERATIONS);
+ const plain=new TextEncoder().encode(JSON.stringify({app:'工事かんたん請求',version:1,exportedAt:new Date().toISOString(),data}));
+ const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,plain);
+ const packageData={format:'KOUJI-KBACKUP-1',cipher:'AES-256-GCM',kdf:'PBKDF2-SHA-256',iterations:BACKUP_ITERATIONS,salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher),passwordCheck:{salt:cfg.salt,verifier:cfg.verifier,iterations:cfg.iterations}};
+ return new Blob([JSON.stringify(packageData)],{type:'application/octet-stream'});
+}
+function downloadBlob(blob,name){
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+$('backup').onclick=async()=>{try{let blob=await makeEncryptedBackup();if(blob)downloadBlob(blob,'工事かんたん請求_暗号化バックアップ_'+new Date().toISOString().slice(0,10)+'.kbackup')}catch(e){alert('バックアップを作成できませんでした：'+e.message)}};
+$('emailBackup').onclick=async()=>{try{let blob=await makeEncryptedBackup();if(!blob)return;let file=new File([blob],'工事かんたん請求_暗号化バックアップ_'+new Date().toISOString().slice(0,10)+'.kbackup',{type:'application/octet-stream'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:'工事かんたん請求バックアップ',text:'暗号化バックアップファイルです。復元には設定した共通パスワードが必要です。',files:[file]})}else{downloadBlob(blob,file.name);alert('この端末ではファイル添付の共有メニューに対応していません。保存した.kbackupファイルをメールアプリで手動添付してください。')}}catch(e){if(e.name!=='AbortError')alert('共有を開始できませんでした：'+e.message)}};
+$('restoreBtn').onclick=()=>$('restoreFile').click();
+$('restoreFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let raw=JSON.parse(await f.text()),x;if(raw.format==='KOUJI-KBACKUP-1'){if(!crypto?.subtle)throw Error('暗号化機能が使えません。HTTPS対応のブラウザで開いてください。');let password=prompt('バックアップ作成時に設定した共通パスワードを入力してください');if(password===null)return;let pc=raw.passwordCheck;if(!pc||!constantTimeEqual(await passwordVerifier(password,unb64(pc.salt),pc.iterations),pc.verifier))throw Error('パスワードが違います');let key=await deriveAesKey(password,unb64(raw.salt),raw.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(raw.iv)},key,unb64(raw.ciphertext));let parsed=JSON.parse(new TextDecoder().decode(plain));x=parsed.data}else if(raw.items&&raw.settings&&raw.jobs){if(!confirm('このファイルは暗号化されていない旧形式のバックアップです。内容を読み込んでよいですか？'))return;x=raw}else throw Error('バックアップ形式が正しくありません');if(!x.items||!x.settings||!x.jobs)throw Error('バックアップ内容が不足しています');if(confirm('現在の端末データを、読み込んだバックアップの内容で置き換えます。置き換え前に現在のデータも自動バックアップします。続行しますか？')){data=x;data.corporations=data.corporations||[];persist();loadSettings();renderCatalog();renderManage();renderHistory();renderCorporations();updatePasswordStatus();alert('バックアップを復元しました。復元前の退避ファイルもダウンロードしました。')}}catch(err){alert('復元できませんでした：'+err.message)}finally{e.target.value=''}};
+updatePasswordStatus();
+
+const DROPBOX_APP_KEY='bqsl6n01r2bpbk4';
+const DROPBOX_REDIRECT_URI='https://susumu5555.github.io/kouji-kantan-seikyu/';
+const DROPBOX_SCOPE='files.metadata.read files.content.read files.content.write';
+const DROPBOX_FOLDER='/工事かんたん請求_同期';
+let dropboxAccessToken=null;
+function base64Url(bytes){return btoa(String.fromCharCode(...bytes)).split('+').join('-').split('/').join('_').replace(/=+$/,'')}
+async function dropboxConnect(){
+ if(!crypto?.subtle)throw Error('安全な暗号化機能が利用できません');
+ const verifier=base64Url(randomBytes(64)),digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)),state=base64Url(randomBytes(24));
+ sessionStorage.setItem('koujiDropboxPkceVerifier',verifier);sessionStorage.setItem('koujiDropboxOAuthState',state);
+ const params=new URLSearchParams({client_id:DROPBOX_APP_KEY,response_type:'code',redirect_uri:DROPBOX_REDIRECT_URI,code_challenge:base64Url(digest),code_challenge_method:'S256',scope:DROPBOX_SCOPE,state});
+ location.href='https://www.dropbox.com/oauth2/authorize?'+params.toString();
+}
+async function exchangeDropboxCode(){
+ const url=new URL(location.href),code=url.searchParams.get('code'),returnedState=url.searchParams.get('state');if(!code)return false;
+ const expected=sessionStorage.getItem('koujiDropboxOAuthState'),verifier=sessionStorage.getItem('koujiDropboxPkceVerifier');
+ if(!expected||!verifier||returnedState!==expected)throw Error('Dropbox認証の確認に失敗しました。最初から接続してください。');
+ const response=await fetch('https://api.dropboxapi.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({code,grant_type:'authorization_code',client_id:DROPBOX_APP_KEY,redirect_uri:DROPBOX_REDIRECT_URI,code_verifier:verifier})});
+ const result=await response.json();if(!response.ok)throw Error('Dropbox認証に失敗しました：'+(result.error_description||result.error||response.status));
+ dropboxAccessToken=result.access_token;sessionStorage.setItem('koujiDropboxAccessToken',dropboxAccessToken);
+ sessionStorage.removeItem('koujiDropboxOAuthState');sessionStorage.removeItem('koujiDropboxPkceVerifier');
+ history.replaceState({},document.title,DROPBOX_REDIRECT_URI);return true;
+}
+function getDropboxAccessToken(){dropboxAccessToken=dropboxAccessToken||sessionStorage.getItem('koujiDropboxAccessToken');if(!dropboxAccessToken)throw Error('Dropboxに接続してください（接続はブラウザのセッション中のみ有効です）');return dropboxAccessToken}
+async function dropboxApi(path,body){
+ const response=await fetch('https://api.dropboxapi.com/2/'+path,{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const result=await response.json().catch(()=>({}));if(!response.ok)throw Error('Dropbox API '+response.status+'：'+(result.error_summary||'処理に失敗しました'));return result;
+}
+
+const DROPBOX_SYNC_FILE=DROPBOX_FOLDER+'/工事データ.kouji-sync';
+const DROPBOX_SYNC_ITERATIONS=310000;
+const DROPBOX_SYNC_REV_KEY='koujiDropboxSyncRevision';
+async function dropboxContentDownload(path){
+ const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Dropbox-API-Arg':JSON.stringify({path})}});
+ if(!r.ok){let msg='Dropboxファイル取得失敗（'+r.status+'）';try{const j=await r.json();msg=j.error_summary||msg}catch(e){}throw Error(msg)}
+ return {blob:await r.blob(),metadata:JSON.parse(r.headers.get('Dropbox-API-Result')||'{}')};
+}
+async function dropboxGetSyncMetadata(){
+ try{return await dropboxApi('files/get_metadata',{path:DROPBOX_SYNC_FILE,include_media_info:false,include_deleted:false})}
+ catch(e){if(String(e.message).includes('path/not_found'))return null;throw e}
+}
+async function makeDropboxSyncPackage(password){
+ if(!password||password.length<8)throw Error('同期専用パスワードは8文字以上にしてください');
+ await persistQueue;
+ const salt=randomBytes(16),iv=randomBytes(12),key=await deriveAesKey(password,salt,DROPBOX_SYNC_ITERATIONS);
+ const payload={app:'工事かんたん請求',format:1,exportedAt:new Date().toISOString(),data};
+ const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(payload)));
+ return JSON.stringify({format:'KOUJI-DROPBOX-SYNC-1',cipher:'AES-256-GCM',kdf:'PBKDF2-SHA-256',iterations:DROPBOX_SYNC_ITERATIONS,salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
+}
+async function decryptDropboxSyncPackage(raw,password){
+ const p=JSON.parse(raw);
+ if(p.format!=='KOUJI-DROPBOX-SYNC-1'||p.cipher!=='AES-256-GCM'||p.kdf!=='PBKDF2-SHA-256')throw Error('Dropbox同期ファイルの形式が正しくありません');
+ if(!Number.isInteger(p.iterations)||p.iterations<100000||p.iterations>2000000)throw Error('暗号化設定が不正です');
+ const key=await deriveAesKey(password,unb64(p.salt),p.iterations);
+ const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(p.iv)},key,unb64(p.ciphertext));
+ const payload=JSON.parse(new TextDecoder().decode(plain));
+ if(payload.app!=='工事かんたん請求'||payload.format!==1||!payload.data?.items||!payload.data?.settings||!payload.data?.jobs)throw Error('同期データの内容が正しくありません');
+ return payload;
+}
+async function uploadDropboxSync(){
+ const current=await dropboxGetSyncMetadata(),known=localStorage.getItem(DROPBOX_SYNC_REV_KEY);
+ if(current&&(!known||known!==current.rev))throw Error('Dropbox側に別の同期データ、または他端末の更新があります。上書き防止のため、先に「Dropboxから取得」を実行してください。');
+ if(!current&&known)throw Error('Dropbox側の同期ファイルが見つかりません。削除・移動された可能性があるため、上書き保存を中止しました。');
+ const password=prompt(current?'同期専用パスワードを入力してください。':'初回の同期専用パスワードを設定してください（8文字以上）。');
+ if(password===null)return;
+ if(!password||password.length<8)throw Error('同期専用パスワードは8文字以上にしてください');
+ if(current){const existing=await dropboxContentDownload(DROPBOX_SYNC_FILE);await decryptDropboxSyncPackage(await existing.blob.text(),password);if(!confirm('Dropbox上の同期データを、現在の端末のデータで更新します。続行しますか？'))return;}
+ else {const again=prompt('確認のため、同じ同期専用パスワードをもう一度入力してください。');if(again===null)return;if(password!==again)throw Error('パスワードが一致しません。Dropboxへの保存を中止しました。');}
+ const content=await makeDropboxSyncPackage(password);
+ const arg={path:DROPBOX_SYNC_FILE,mode:current?{'.tag':'update',update:current.rev}:{'.tag':'add'},autorename:false,mute:true};
+ const response=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Dropbox-API-Arg':JSON.stringify(arg),'Content-Type':'application/octet-stream'},body:content});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok)throw Error('Dropbox保存失敗：'+(result.error_summary||response.status));
+ localStorage.setItem(DROPBOX_SYNC_REV_KEY,result.rev);
+ $('dropboxStatus').textContent='暗号化同期データをDropboxに保存しました（'+new Date().toLocaleString('ja-JP')+'）';
+ alert('暗号化した工事データをDropboxに保存しました。');
+}
+async function downloadDropboxSync(){
+ const password=prompt('同期専用パスワードを入力してください。');
+ if(password===null)return;
+ const current=await dropboxGetSyncMetadata();
+ if(!current)throw Error('Dropboxに同期データがありません。先に保存してください。');
+ const downloaded=await dropboxContentDownload(DROPBOX_SYNC_FILE);
+ const payload=await decryptDropboxSyncPackage(await downloaded.blob.text(),password);
+ if(!confirm('現在の端末の工事データをDropboxのデータで置き換えます。実行前に、現在の端末データの暗号化バックアップを作成してください。続行しますか？'))return;
+ const previousData=data,previousEncrypted=localStorage.getItem('koujiAppDataEncrypted'),previousLegacy=localStorage.getItem('koujiAppData');
+ try{data=normalizeData(payload.data);await persist();}
+ catch(saveError){data=previousData;try{if(previousEncrypted===null)localStorage.removeItem('koujiAppDataEncrypted');else localStorage.setItem('koujiAppDataEncrypted',previousEncrypted);if(previousLegacy===null)localStorage.removeItem('koujiAppData');else localStorage.setItem('koujiAppData',previousLegacy);}catch(restoreError){throw Error('端末保存に失敗し、保存領域の復元にも失敗しました。アプリを閉じず、端末データを確認してください。元のエラー：'+saveError.message+'／復元エラー：'+restoreError.message)}throw Error('端末への保存に失敗したため、取得前のデータに戻しました：'+saveError.message)}
+ loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
+ localStorage.setItem(DROPBOX_SYNC_REV_KEY,current.rev);
+ $('dropboxStatus').textContent='Dropboxの暗号化同期データを取得しました（'+new Date().toLocaleString('ja-JP')+'）';
+ alert('Dropboxのデータをこの端末に反映しました。');
+}
+$('dropboxUploadSync').onclick=async()=>{try{await uploadDropboxSync()}catch(e){alert('Dropbox保存エラー：'+e.message)}};
+$('dropboxDownloadSync').onclick=async()=>{try{await downloadDropboxSync()}catch(e){alert('Dropbox取得エラー：'+e.message)}};
+
+async function listDropboxArchiveCandidates(){
+ let result=await dropboxApi('files/list_folder',{path:DROPBOX_FOLDER,recursive:true,include_deleted:false,include_mounted_folders:false,include_non_downloadable_files:false});
+ let entries=result.entries||[];
+ while(result.has_more){result=await dropboxApi('files/list_folder/continue',{cursor:result.cursor});entries=entries.concat(result.entries||[])}
+ const cutoff=new Date();const day=cutoff.getDate();cutoff.setDate(1);cutoff.setMonth(cutoff.getMonth()-1);const lastDay=new Date(cutoff.getFullYear(),cutoff.getMonth()+1,0).getDate();cutoff.setDate(Math.min(day,lastDay));
+ const files=entries.filter(x=>x['.tag']==='file');
+ const syncPathLower=(DROPBOX_SYNC_FILE||'').toLowerCase();
+ const archiveFiles=files.filter(x=>(x.path_lower||'').toLowerCase()!==syncPathLower);
+ const candidates=archiveFiles.filter(x=>x.server_modified&&new Date(x.server_modified)<cutoff);
+ const unknown=archiveFiles.filter(x=>!x.server_modified);
+ return {files:archiveFiles,candidates,unknown,cutoff};
+}
+function zcrc(b){let c=0xffffffff;for(let i=0;i<b.length;i++){c^=b[i];for(let k=0;k<8;k++)c=(c>>>1)^((c&1)?0xedb88320:0)}return(c^0xffffffff)>>>0}
+function z16(n){return new Uint8Array([n&255,n>>>8&255])}function z32(n){return new Uint8Array([n&255,n>>>8&255,n>>>16&255,n>>>24&255])}
+function zjoin(a){let o=new Uint8Array(a.reduce((s,x)=>s+x.length,0)),p=0;for(const x of a){o.set(x,p);p+=x.length}return o}
+function makeZip(fs){if(fs.length>65535)throw Error('ZIP32形式ではファイル数が65,535件を超えるZIPを作成できません');let loc=[],cen=[],off=0,te=new TextEncoder();for(const f of fs){let n=te.encode(f.name),d=f.bytes;if(n.length>65535||d.length>0xfffffffe||off+30+n.length+d.length>0xfffffffe)throw Error('ZIP32形式の容量上限（約4GiB）を超えました。ZIP64形式が必要です');let c=zcrc(d),lh=zjoin([z32(0x04034b50),z16(20),z16(0x0800),z16(0),z16(0),z16(33),z32(c),z32(d.length),z32(d.length),z16(n.length),z16(0),n]);loc.push(lh,d);let ch=zjoin([z32(0x02014b50),z16(20),z16(20),z16(0x0800),z16(0),z16(0),z16(33),z32(c),z32(d.length),z32(d.length),z16(n.length),z16(0),z16(0),z16(0),z16(0),z32(0),z32(off),n]);cen.push(ch);off+=lh.length+d.length}let cd=zjoin(cen),end=zjoin([z32(0x06054b50),z16(0),z16(0),z16(fs.length),z16(fs.length),z32(cd.length),z32(off),z16(0)]);return new Blob([zjoin(loc),cd,end],{type:'application/zip'})}
+const ARCHIVE_ZIP_LIMIT=500*1024*1024;
+function archiveRelativeName(e){const full=e.path_display||e.name,prefix=DROPBOX_FOLDER+'/';const relative=full.startsWith(prefix)?full.slice(prefix.length):e.name;const safe=relative.split('/').filter(part=>part&&part!=='.'&&part!=='..').join('/');if(!safe)throw Error('ZIP内のファイル名を安全に決定できません：'+e.name);return safe}
+function partitionArchiveFiles(es){const groups=[];let current=[],bytes=0;for(const e of es){const size=Number(e.size);if(!Number.isFinite(size)||size<0)throw Error('ファイルサイズを確認できないためZIP分割を中止しました：'+e.name);if(size>ARCHIVE_ZIP_LIMIT){if(current.length){groups.push(current);current=[];bytes=0}groups.push([e]);continue}if(current.length&&bytes+size>ARCHIVE_ZIP_LIMIT){groups.push(current);current=[];bytes=0}current.push(e);bytes+=size}if(current.length)groups.push(current);return groups}
+async function getDropboxFile(e){let r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+getDropboxAccessToken(),'Dropbox-API-Arg':JSON.stringify({path:e.id})}});if(!r.ok)throw Error(e.name+'の取得に失敗（'+r.status+'）');return new Uint8Array(await r.arrayBuffer())}
+async function archiveCandidates(es){const groups=partitionArchiveFiles(es),created=[];for(let g=0;g<groups.length;g++){let fs=[],actualBytes=0;for(let i=0;i<groups[g].length;i++){const e=groups[g][i];$('dropboxStatus').textContent='ZIP '+(g+1)+'/'+groups.length+' 作成中：ファイル '+(i+1)+'/'+groups[g].length;const bytes=await getDropboxFile(e);if(actualBytes+bytes.length>ARCHIVE_ZIP_LIMIT&&fs.length)throw Error('Dropboxの表示サイズと実データサイズが異なるため、500MBを超えるZIPになる可能性があります。安全のため保存を中止しました。もう一度一覧を確認してください。');fs.push({name:archiveRelativeName(e),bytes});actualBytes+=bytes.length}if(actualBytes>ARCHIVE_ZIP_LIMIT&&groups[g].length>1)throw Error('ZIPの実データが500MBを超えました。保存を中止しました。');const blob=makeZip(fs);const partName='工事かんたん請求_削除前保存_'+new Date().toISOString().slice(0,10)+'_'+String(g+1).padStart(3,'0')+'-'+String(groups.length).padStart(3,'0')+'.zip';downloadBlob(blob,partName);created.push({name:partName,bytes:actualBytes,files:fs.length});if(g<groups.length-1)await new Promise(resolve=>setTimeout(resolve,900))}return created}
+async function deleteCandidates(es){for(let i=0;i<es.length;i++){$('dropboxStatus').textContent='Dropbox削除中 '+(i+1)+'/'+es.length;await dropboxApi('files/delete_v2',{path:es[i].id})}}
+async function refreshDropboxArchivePreview(){
+ const status=$('dropboxStatus'),preview=$('dropboxArchivePreview');status.textContent='Dropboxのファイル一覧を確認中…';
+ const x=await listDropboxArchiveCandidates();window.dropboxArchiveSnapshot=x;
+ preview.innerHTML='<p>確認日時：'+esc(new Date().toLocaleString('ja-JP'))+'</p><p>全ファイル：'+x.files.length+'件（サブフォルダ内を含む）</p><p>1か月以内・日時不明は残します</p><p>削除候補：'+x.candidates.length+'件</p><p>基準日：'+esc(x.cutoff.toLocaleDateString('ja-JP'))+'</p><p>ZIPは1ファイルあたり最大500MBを目安に自動分割します。500MBを超える単独ファイルは単独ZIPになります。</p><button class="btn" id="dropboxZip" '+(x.candidates.length?'':'disabled')+'>削除候補を分割ZIP保存</button><p id="dropboxZipResult" class="hint" role="status"></p><label style="display:block;margin-top:10px"><input type="checkbox" id="dropboxSavedConfirm" disabled> すべてのZIPをPCに保存したことを確認しました</label><button class="btn red full" id="dropboxDelete" disabled style="margin-top:8px">確認後にDropboxから削除</button>';
+ $('dropboxZip').onclick=async()=>{try{const snapshot=window.dropboxArchiveSnapshot.candidates;const fresh=await listDropboxArchiveCandidates(),now=new Map(fresh.candidates.map(e=>[e.id,e]));for(const old of snapshot){const cur=now.get(old.id);if(!cur||cur.rev!==old.rev||cur.server_modified!==old.server_modified||cur.size!==old.size)throw Error('ZIP作成前にファイルが変更されました。最新一覧を再確認してください')}const result=await archiveCandidates(snapshot);window.dropboxArchiveSnapshot.zipCreatedAt=new Date().toISOString();window.dropboxArchiveSnapshot.createdZips=result;$('dropboxZipResult').textContent=result.length+'個のZIPを作成しました（合計 '+result.reduce((n,x)=>n+x.files,0)+'ファイル）。すべてのZIPが保存されたか確認してください。'+(snapshot.some(e=>Number(e.size)>ARCHIVE_ZIP_LIMIT)?' 500MBを超える単独ファイルが含まれるため、そのZIPは500MBを超えています。':'');$('dropboxSavedConfirm').disabled=false;$('dropboxSavedConfirm').checked=false;$('dropboxDelete').disabled=true;$('dropboxStatus').textContent='分割ZIPを作成しました。すべてPCへ保存されたか確認してください'}catch(e){window.dropboxArchiveSnapshot.zipCreatedAt=null;alert('ZIP作成失敗：'+e.message);$('dropboxStatus').textContent='ZIP保存未完了：'+e.message}};
+ $('dropboxSavedConfirm').onchange=()=>{$('dropboxDelete').disabled=!$('dropboxSavedConfirm').checked};
+ $('dropboxDelete').onclick=async()=>{try{if(!$('dropboxSavedConfirm').checked||!window.dropboxArchiveSnapshot?.zipCreatedAt||!window.dropboxArchiveSnapshot?.createdZips?.length)return;const fresh=await listDropboxArchiveCandidates(),now=new Map(fresh.candidates.map(e=>[e.id,e])),es=window.dropboxArchiveSnapshot.candidates;for(const old of es){const cur=now.get(old.id);if(!cur||cur.rev!==old.rev||cur.server_modified!==old.server_modified||cur.size!==old.size)throw Error('ZIP作成後にファイルが変更されました。削除を中止しました。ZIPを作り直してください')}if(!confirm(es.length+'件をDropboxから削除します。分割ZIP '+window.dropboxArchiveSnapshot.createdZips.length+'個をすべてPCに保存したことを確認済みです。実行しますか？'))return;await deleteCandidates(es);alert(es.length+'件をDropboxから削除しました。Dropboxの削除済みファイルから復元できる場合があります。');await refreshDropboxArchivePreview()}catch(e){alert('削除中にエラー：'+e.message);$('dropboxStatus').textContent='削除を中止または一部停止：'+e.message}};
+ status.textContent='Dropbox接続中・一覧取得済み';
+}
+$('dropboxConnect').onclick=async()=>{try{await dropboxConnect()}catch(e){alert('Dropbox接続を開始できませんでした：'+e.message)}};
+$('dropboxRefresh').onclick=async()=>{try{await refreshDropboxArchivePreview()}catch(e){$('dropboxStatus').textContent='一覧取得失敗：'+e.message;alert(e.message)}};
+async function initializeDropboxConnection(){
+ try{
+  const u=new URL(location.href);
+  if(u.searchParams.has('error'))throw Error('Dropbox認証がキャンセルまたは拒否されました：'+(u.searchParams.get('error_description')||u.searchParams.get('error')));
+  if(u.searchParams.has('code')){await exchangeDropboxCode();$('dropboxStatus').textContent='Dropbox認証済み';await refreshDropboxArchivePreview();return}
+  const token=sessionStorage.getItem('koujiDropboxAccessToken');if(token){dropboxAccessToken=token;$('dropboxStatus').textContent='Dropbox接続中';await refreshDropboxArchivePreview()}
+ }catch(e){$('dropboxStatus').textContent='Dropbox接続を確認できません：'+e.message}
+}
+
+function commitPasswordMigration(config,encrypted){
+ const previous={config:localStorage.getItem('koujiBackupPasswordConfig'),encrypted:localStorage.getItem('koujiAppDataEncrypted'),legacy:localStorage.getItem('koujiAppData')};
+ const restore=(key,value)=>{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)};
+ try{
+  localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify(config));
+  localStorage.setItem('koujiAppDataEncrypted',JSON.stringify(encrypted));
+  localStorage.removeItem('koujiAppData');
+ }catch(saveError){
+  try{restore('koujiBackupPasswordConfig',previous.config);restore('koujiAppDataEncrypted',previous.encrypted);restore('koujiAppData',previous.legacy);}
+  catch(restoreError){throw Error('パスワード移行の保存に失敗し、元データの復元にも失敗しました。アプリを閉じず、保存領域を確認してください。保存エラー：'+saveError.message+'／復元エラー：'+restoreError.message)}
+  throw Error('パスワード移行の保存に失敗したため、変更前の状態に戻しました：'+saveError.message);
+ }
+}
+async function startProtectedApp(){
+ const encrypted=localStorage.getItem('koujiAppDataEncrypted'),cfg=getPasswordConfig(),legacy=localStorage.getItem('koujiAppData');
+ const title=$('lockTitle'),msg=$('lockMessage'),confirmWrap=$('lockConfirmWrap'),btn=$('unlockButton');
+ if(encrypted){title.textContent='アプリのロック解除';msg.textContent='保存データは暗号化されています。設定したパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='ロックを解除';$('lockPasswordLabel').textContent='パスワード';}
+ else if(cfg){title.textContent='保存データを暗号化';msg.textContent='既存データを暗号化します。以前にバックアップ用パスワードを設定した場合は同じパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='登録済みパスワード';}
+ else {title.textContent='データ保護の設定';msg.textContent='このアプリの保存データを暗号化します。8文字以上のパスワードを設定してください。忘れると復元できません。';confirmWrap.style.display='block';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='新しいパスワード';}
+ btn.onclick=async()=>{const pw=$('lockPassword').value,pw2=$('lockPasswordConfirm').value;$('lockError').textContent='';try{
+  if(!crypto?.subtle)throw Error('暗号化機能を使えません。HTTPSで開いてください。');
+  let activeCfg=cfg;
+  if(encrypted){
+   if(!activeCfg)throw Error('パスワード情報がありません。暗号化バックアップからの復元が必要です。');
+   if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');
+   const enc=JSON.parse(encrypted),key=await deriveAesKey(pw,unb64(enc.salt||activeCfg.salt),activeCfg.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
+   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));storageKey=key;
+   if(pw.length<8){
+    alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
+    const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
+    if(next===null)throw Error('パスワード変更をキャンセルしました。');
+    if(next.length<8)throw Error('新しいパスワードは8文字以上にしてください。');
+    const again=prompt('確認のため、新しいパスワードをもう一度入力してください。');
+    if(again===null)throw Error('パスワード変更をキャンセルしました。');
+    if(next!==again)throw Error('新しいパスワードが一致しません。もう一度ロック解除してください。');
+    const salt=randomBytes(16),iv=randomBytes(12),newKey=await deriveAesKey(next,salt,BACKUP_ITERATIONS);
+    const verifier=await passwordVerifier(next,salt,BACKUP_ITERATIONS);
+    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},newKey,new TextEncoder().encode(JSON.stringify(data)));
+    commitPasswordMigration({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS},{format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
+    storageKey=newKey;
+    alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
+   }
+  }else{
+   if(activeCfg){if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');}
+   else {if(pw.length<8)throw Error('パスワードは8文字以上にしてください。');if(pw!==pw2)throw Error('確認用パスワードが一致しません。');const salt=randomBytes(16);activeCfg={salt:b64(salt),verifier:await passwordVerifier(pw,salt,BACKUP_ITERATIONS),iterations:BACKUP_ITERATIONS};localStorage.setItem('koujiBackupPasswordConfig',JSON.stringify(activeCfg));}
+   data=normalizeData(legacy?JSON.parse(legacy):null);storageKey=await deriveAesKey(pw,unb64(activeCfg.salt),activeCfg.iterations);
+   if(pw.length<8){
+    alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
+    const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
+    if(next===null)throw Error('パスワード変更をキャンセルしました。');
+    if(next.length<8)throw Error('新しいパスワードは8文字以上にしてください。');
+    const again=prompt('確認のため、新しいパスワードをもう一度入力してください。');
+    if(again===null)throw Error('パスワード変更をキャンセルしました。');
+    if(next!==again)throw Error('新しいパスワードが一致しません。もう一度ロック解除してください。');
+    const salt=randomBytes(16),iv=randomBytes(12),newKey=await deriveAesKey(next,salt,BACKUP_ITERATIONS);
+    const verifier=await passwordVerifier(next,salt,BACKUP_ITERATIONS);
+    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},newKey,new TextEncoder().encode(JSON.stringify(data)));
+    commitPasswordMigration({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS},{format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
+    storageKey=newKey;
+    alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
+   }else await persist();
+  }
+  $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
+  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();initializeDropboxConnection();
+ }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}};
+}
+startProtectedApp();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('Service Worker registration failed', err)));
+}
+</script></body></html>
