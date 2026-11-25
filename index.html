@@ -89,13 +89,15 @@ body.app-locked header,body.app-locked .wrap{visibility:hidden}
   var el=document.getElementById('lockError');
   if(el)el.textContent=message;
  }
- window.addEventListener('error',function(e){report('ページ読込エラー：'+(e.message||'詳細不明'))});
- window.addEventListener('unhandledrejection',function(e){report('処理エラー：'+(e.reason&&e.reason.message||String(e.reason||'詳細不明')))});
+ window.__koujiBootError='';
+ window.addEventListener('error',function(e){window.__koujiBootError=(e.message||'詳細不明')+'（行 '+(e.lineno||'?')+'）';report('起動エラー：'+window.__koujiBootError)});
+ window.addEventListener('unhandledrejection',function(e){window.__koujiBootError=(e.reason&&e.reason.message||String(e.reason||'詳細不明'));report('処理エラー：'+window.__koujiBootError)});
  document.addEventListener('DOMContentLoaded',function(){
   var button=document.getElementById('unlockButton');
   if(!button){report('診断：開始ボタンが見つかりません');return}
   button.addEventListener('click',function(){
-   report('診断：タップ検知。メイン処理の登録状態：'+typeof button.onclick+'。暗号化API：'+(window.crypto&&crypto.subtle?'利用可能':'利用不可'));
+   var handlerState=button.onclick===null?'未登録（null）':typeof button.onclick;
+   report('診断：タップ検知。メイン処理='+handlerState+'。起動時エラー='+(window.__koujiBootError||'検知なし')+'。暗号化API='+(window.crypto&&crypto.subtle?'利用可能':'利用不可'));
   },true);
  });
 })();
