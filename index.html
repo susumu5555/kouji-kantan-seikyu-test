@@ -491,7 +491,7 @@ async function lockAfterInactivity(){
   }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}
  };
 }
-function activateInactivityLock(){
+function activateInactivityLock(lastActivity=null){
  if(!inactivityListenersInstalled){
   const events=['pointerdown','keydown','touchstart','click','input','change','scroll'];
   events.forEach(name=>document.addEventListener(name,resetInactivityTimer,{passive:true}));
@@ -500,7 +500,13 @@ function activateInactivityLock(){
   });
   inactivityListenersInstalled=true;
  }
- resetInactivityTimer();
+ if(Number.isFinite(lastActivity)&&lastActivity>0){
+  inactivityLastActivity=lastActivity;
+  if(inactivityTimer)clearTimeout(inactivityTimer);
+  const remaining=INACTIVITY_TIMEOUT_MS-(Date.now()-lastActivity);
+  if(remaining<=0)lockAfterInactivity();
+  else inactivityTimer=setTimeout(lockAfterInactivity,remaining);
+ }else resetInactivityTimer();
 }
 
 async function startProtectedApp(){
@@ -562,7 +568,7 @@ async function startProtectedApp(){
    data=remembered.data;storageKey=remembered.key;await persist();
    $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
    updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
-   activateInactivityLock();
+   activateInactivityLock(remembered.lastActivity);
    return;
   }
  }
