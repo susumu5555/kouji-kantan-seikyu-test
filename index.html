@@ -446,7 +446,7 @@ async function startProtectedApp(){
    if(!activeCfg)throw Error('パスワード情報がありません。暗号化バックアップからの復元が必要です。');
    if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');
    const enc=JSON.parse(encrypted),key=await deriveAesKey(pw,unb64(enc.salt||activeCfg.salt),activeCfg.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
-   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));storageKey=key;
+   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));storageKey=key;await persist();
    if(pw.length<8){
     alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
     const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
@@ -488,7 +488,7 @@ async function startProtectedApp(){
  if(encrypted){
   const remembered=await restoreUnlockSession();
   if(remembered){
-   data=remembered.data;storageKey=remembered.key;
+   data=remembered.data;storageKey=remembered.key;await persist();
    $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
    updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
    activateInactivityLock();
