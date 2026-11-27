@@ -70,6 +70,14 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <label>工事施工日</label><input id="pWorkDate" type="date">
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
 </div>
+<div class="panel">
+<h2>工事予定を登録</h2>
+<label>現場</label><select id="sProject"></select>
+<div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
+<label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
+<label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
+<div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
+</div>
 </section>
 
 <section id="cases" class="page hidden"><div class="actions"><button class="secondary" onclick="location.href='./'">← ホームに戻る</button></div>
@@ -120,14 +128,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <h3 class="day-heading" id="selectedDateHeading">選択日の予定</h3>
 <div id="selectedDayEvents"></div>
 </div>
-<div class="panel">
-<h2>工事予定を登録</h2>
-<label>現場</label><select id="sProject"></select>
-<div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
-<label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
-<label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
-<div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
-</div>
+
 </section>
 
 </main>
