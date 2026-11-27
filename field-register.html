@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173f59">
+<title>現場管理アプリ</title>
+<style>
+:root{--navy:#173f59;--blue:#245b78;--bg:#f3f5f7;--line:#dce2e6;--muted:#66747d;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1c2930;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+header{background:var(--navy);color:#fff;padding:20px 18px 18px}header h1{font-size:22px;margin:0 0 5px}header p{margin:0;color:#d4e0e7;font-size:13px}
+main{max-width:900px;margin:0 auto;padding:16px}
+.notice{background:#fff8e7;border:1px solid #ead9a8;border-radius:13px;padding:12px 14px;font-size:13px;line-height:1.65;margin-bottom:14px}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.nav button{border:0;border-radius:12px;background:#dce8ee;color:var(--navy);padding:13px 5px;font-weight:700;font-size:14px}
+.nav button.active{background:var(--navy);color:white}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.home-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;text-decoration:none;border:1px solid var(--line);border-radius:14px;background:#e8f0f4;color:var(--navy);padding:18px 10px;min-height:116px}.home-action span{font-size:27px}.home-action b{font-size:15px}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:17px;margin-bottom:14px}
+h2{font-size:19px;margin:0 0 14px}h3{font-size:15px;margin:18px 0 9px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}
+input,textarea,select{width:100%;border:1px solid #cbd4d9;border-radius:10px;padding:12px;font:inherit;background:#fff;color:#1c2930}
+textarea{min-height:76px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.primary,.action{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700}
+button.secondary{background:#e8eef1;color:var(--navy);border:0;border-radius:10px;padding:11px 14px;font-weight:650}
+button.danger{background:#fff0ef;color:#a3342b;border:1px solid #f0cbc7;border-radius:9px;padding:8px 11px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:9px 0}
+.itemtop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.item strong{font-size:15px}.sub{font-size:12px;color:var(--muted);line-height:1.6;margin-top:4px}
+.pill{font-size:11px;background:#edf3f6;color:#31566b;border-radius:20px;padding:4px 8px;white-space:nowrap}
+.empty{color:var(--muted);font-size:13px;padding:15px 2px}
+.small{font-size:12px;color:var(--muted)}
+.hidden{display:none!important}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+@media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
+</style></head>
+<body>
+<header><h1>現場管理アプリ</h1></header>
+<main>
+<section id="home" class="page">
+<div class="home-grid">
+<button class="home-action" data-page="register"><span>＋</span><b>新規登録</b></button>
+<button class="home-action" data-page="cases"><span>▤</span><b>案件・工事台帳</b></button>
+<button class="home-action" data-page="schedule"><span>▦</span><b>スケジュール</b></button>
+<a class="home-action" href="https://susumu5555.github.io/kouji-kantan-seikyu/" target="_blank" rel="noopener"><span>￥</span><b>見積書作成</b></a>
+</div>
+</section>
+
+<section id="register" class="page hidden"><div class="actions"><button class="secondary" data-page="home">← ホームに戻る</button></div>
+
+<div class="panel">
+<h2>新規登録</h2>
+<div class="row"><div><label>現場名 *</label><input id="pName" placeholder="例：山田様 エアコン取付"></div><div><label>顧客名</label><input id="pCustomer" placeholder="例：山田様"></div></div>
+<div class="row"><div><label for="pZip">郵便番号</label><input id="pZip" inputmode="numeric" maxlength="8" autocomplete="postal-code" placeholder="例：812-0011"></div><div style="display:flex;align-items:end"><button class="secondary" id="pZipSearch" type="button" style="width:100%">住所を自動入力</button></div></div>
+<div id="pZipStatus" class="small" role="status" aria-live="polite"></div>
+<label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
+<label for="pCity">市区町村</label><input id="pCity" autocomplete="address-level2" placeholder="市区町村">
+<label for="pTown">町域</label><input id="pTown" autocomplete="address-level3" placeholder="町域">
+<label for="pStreet">番地</label><input id="pStreet" placeholder="番地">
+<label for="pBuilding">建物名・部屋番号</label><input id="pBuilding" placeholder="任意">
+<label>工事施工日</label><input id="pWorkDate" type="date">
+<div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" data-page="home">ホームへ戻る</button></div>
+</div>
+</section>
+
+<section id="cases" class="page hidden"><div class="actions"><button class="secondary" data-page="home">← ホームに戻る</button></div>
+
+<div class="panel">
+<h2>案件・工事台帳</h2>
+<h3>登録済み現場</h3>
+<p class="small">登録日の新しい順に20件ずつ表示します。21～40件目以降は「次へ」で切り替えます。</p>
+<input id="projectSearch" placeholder="現場名・顧客名・住所で検索">
+<div id="projectList"></div>
+<div id="projectPagination" class="actions" aria-label="現場一覧ページ切替"></div>
+</div>
+</section>
+
+<section id="ledger" class="page hidden">
+<div class="actions"><button class="secondary" data-page="cases">← 案件・工事台帳に戻る</button></div>
+<div class="panel">
+<h2>工事台帳（寸法記録）</h2>
+<div id="ledgerProjectHeading" class="small"></div>
+<label>対象現場 *</label><select id="dProject"></select>
+<div id="selectedProjectInfo" class="item empty">現場を選択すると、現場情報がここに表示されます。</div>
+<div id="projectPdfList"></div>
+<div id="pdfSaveStatus" class="small" aria-live="polite"></div>
+<div class="actions"><button class="secondary" id="openCamera">写真を撮影（写真PDFメーカー）</button></div>
+
+<div class="row"><div><label>記録日</label><input id="dDate" type="date"></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
+<div class="row"><div><label>寸法・数値</label><input id="dValue" placeholder="例：3.5"></div><div><label>単位</label><select id="dUnit"><option>m</option><option>mm</option><option>cm</option><option>台</option><option>個</option><option>その他</option></select></div></div>
+<label>備考</label><textarea id="dMemo" placeholder="寸法の補足・施工上の注意"></textarea>
+<div class="actions"><button class="primary" id="saveDimension">寸法を保存</button></div>
+</div>
+<div class="panel"><h2>寸法記録一覧</h2><div id="dimensionList"></div></div>
+
+</section>
+
+<section id="schedule" class="page hidden"><div class="actions"><button class="secondary" data-page="home">← ホームに戻る</button></div>
+
+<div class="panel">
+<h2>スケジュール</h2>
+<label>現場</label><select id="sProject"></select>
+<div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
+<label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
+<label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
+<div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
+</div>
+<div class="panel"><h2>予定一覧</h2><div class="row"><div><label>表示開始日</label><input id="scheduleFrom" type="date"></div><div><label>表示終了日</label><input id="scheduleTo" type="date"></div></div><div id="scheduleList"></div></div>
+</section>
+
+</main>
+<script>
+const $=id=>document.getElementById(id), key='genbaThreeModule_v1';
+const prefectures=['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+prefectures.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;$('pPref').appendChild(o)});
+$('pZipSearch').onclick=()=>{
+ const zip=$('pZip').value.replace(/[^0-9]/g,'');
+ if(!/^\\d{7}$/.test(zip)){$('pZipStatus').textContent='郵便番号は7桁で入力してください。';return}
+ const button=$('pZipSearch');button.disabled=true;$('pZipStatus').textContent='住所を検索しています…';
+ const cb='genbaZip_'+Date.now()+'_'+Math.floor(Math.random()*100000),script=document.createElement('script');let done=false;
+ const timer=setTimeout(()=>finish(null,'検索がタイムアウトしました。時間をおいて再試行してください。'),15000);
+ function finish(data,error){if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();button.disabled=false;
+  if(error){$('pZipStatus').textContent=error;return}
+  if(!data||data.status!==200){$('pZipStatus').textContent=data?.message||'住所検索に失敗しました。';return}
+  if(!data.results?.length){$('pZipStatus').textContent='該当する住所がありません。住所を手入力してください。';return}
+  const r=data.results[0];$('pPref').value=r.address1||'';$('pCity').value=r.address2||'';$('pTown').value=r.address3||'';
+  $('pZipStatus').textContent=data.results.length>1?'複数候補があります。最初の候補を入力しました。町域を確認してください。':'住所を入力しました。番地・建物名を確認してください。';
+ }
+ window[cb]=data=>finish(data,null);script.onerror=()=>finish(null,'住所検索サービスに接続できませんでした。');
+ script.src='https://zipcloud.ibsnet.co.jp/api/search?zipcode='+encodeURIComponent(zip)+'&callback='+encodeURIComponent(cb);document.head.appendChild(script);
+};
+let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimensions":[],"schedules":[]}');
+if(!Array.isArray(db.pdfs))db.pdfs=[];
+const save=()=>localStorage.setItem(key,JSON.stringify(db));
+const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
+function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+$('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pCity').value,$('pTown').value,$('pStreet').value,$('pBuilding').value].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pCity','pTown','pStreet','pBuilding','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
+let projectPage=1;
+const PROJECTS_PER_PAGE=20;
+function renderProjects(){
+ const q=$('projectSearch').value.trim().toLowerCase();
+ const sorted=[...db.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+ const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address].some(x=>(x||'').toLowerCase().includes(q))):sorted;
+ const total=filtered.length;
+ const pageCount=Math.max(1,Math.ceil(total/PROJECTS_PER_PAGE));
+ if(projectPage>pageCount)projectPage=pageCount;
+ if(projectPage<1)projectPage=1;
+ const from=(projectPage-1)*PROJECTS_PER_PAGE;
+ const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
+ $('projectList').innerHTML=pageItems.length?pageItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button></div></div>`).join(''):'<div class="empty">該当する現場はありません。</div>';
+ const end=Math.min(from+PROJECTS_PER_PAGE,total);
+ $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
+}
+window.changeProjectPage=function(delta){projectPage+=delta;renderProjects();window.scrollTo({top:0,behavior:'smooth'});};
+window.openLedger=function(projectId){
+ $('dProject').value=projectId;
+ showPage('ledger');
+};
+$('projectSearch').oninput=()=>{projectPage=1;renderProjects()};
+function renderSelectedProject(){
+ const p=db.projects.find(x=>x.id===$('dProject').value);
+ const box=$('selectedProjectInfo');
+ $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name:'';
+ if(!p){box.className='item empty';box.textContent='現場を選択すると、現場情報がここに表示されます。';return;}
+ box.className='item';
+ box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
+}
+$('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
+function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
+$('saveDimension').onclick=()=>{if(!$('dProject').value||!$('dLabel').value.trim())return alert('現場と記録項目を入力してください');db.dimensions.push({id:id(),projectId:$('dProject').value,date:$('dDate').value,label:$('dLabel').value,value:$('dValue').value,unit:$('dUnit').value,memo:$('dMemo').value,createdAt:new Date().toISOString()});save();['dDate','dLabel','dValue','dMemo'].forEach(x=>$(x).value='');render()};
+function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
+$('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');render()};
+function renderSchedules(){let a=[...db.schedules].sort((x,y)=>(x.date+' '+x.time).localeCompare(y.date+' '+y.time));let f=$('scheduleFrom').value,t=$('scheduleTo').value;if(f)a=a.filter(x=>x.date>=f);if(t)a=a.filter(x=>x.date<=t);$('scheduleList').innerHTML=a.length?a.map(s=>`<div class="item"><div class="itemtop"><strong>${esc(s.date)} ${esc(s.time)}</strong><span class="pill">${esc(s.type)}</span></div><div class="sub">${esc(projectName(s.projectId))}<br>${esc(s.content)}</div></div>`).join(''):'<div class="empty">予定はありません。</div>'}
+$('scheduleFrom').onchange=renderSchedules;$('scheduleTo').onchange=renderSchedules;
+function render(){fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+
+const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
+const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
+let pdfDbPromise;
+function openPdfDb(){
+ if(pdfDbPromise)return pdfDbPromise;
+ pdfDbPromise=new Promise((resolve,reject)=>{
+  const req=indexedDB.open('genbaProjectPdfs',1);
+  req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains('pdfs'))d.createObjectStore('pdfs',{keyPath:'id'});};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+ });
+ return pdfDbPromise;
+}
+async function savePdfBlob(record){
+ const d=await openPdfDb();
+ return new Promise((resolve,reject)=>{
+  const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').put(record);
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+ });
+}
+async function getPdfRecord(id){
+ const d=await openPdfDb();
+ return new Promise((resolve,reject)=>{
+  const req=d.transaction('pdfs','readonly').objectStore('pdfs').get(id);
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+ });
+}
+function fmtBytes(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(2)+' MB';}
+function renderProjectPdfs(){
+ const pid=$('dProject').value,box=$('projectPdfList');
+ if(!pid){box.innerHTML='';return;}
+ const list=(db.pdfs||[]).filter(x=>x.projectId===pid).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+ box.innerHTML='<h3>保存済み写真PDF</h3>'+(list.length?list.map(x=>`<div class="item"><div style="flex:1"><strong>${esc(x.fileName)}</strong><div class="sub">${new Date(x.createdAt).toLocaleString('ja-JP')} ・ ${esc(x.sizeLabel)}</div></div><button class="secondary" onclick="openSavedPdf('${x.id}')">開く</button></div>`).join(''):'<div class="empty">この現場に保存された写真PDFはありません。</div>');
+}
+window.openSavedPdf=async function(id){
+ try{const r=await getPdfRecord(id);if(!r)return alert('PDFが見つかりません');const u=URL.createObjectURL(r.blob);const w=window.open(u,'_blank');if(!w){const a=document.createElement('a');a.href=u;a.download=r.fileName;a.click();}setTimeout(()=>URL.revokeObjectURL(u),60000);}
+ catch(e){alert('PDFを開けませんでした：'+(e.message||e));}
+};
+window.addEventListener('message',async event=>{
+ if(event.origin!==PHOTO_MAKER_ORIGIN)return;
+ const m=event.data;
+ if(!m||m.type!=='PHOTO_PDF_READY'||!m.projectId||!(m.pdfBytes instanceof ArrayBuffer))return;
+ const project=db.projects.find(p=>p.id===m.projectId);
+ if(!project)return;
+ try{
+  const blob=new Blob([m.pdfBytes],{type:'application/pdf'});
+  const record={id:id(),projectId:m.projectId,fileName:m.fileName||'現場写真.pdf',createdAt:new Date().toISOString(),size:blob.size,sizeLabel:fmtBytes(blob.size),blob};
+  await savePdfBlob(record);
+  db.pdfs.push({id:record.id,projectId:record.projectId,fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel});
+  save();renderProjectPdfs();
+  $('pdfSaveStatus').textContent='写真PDFをこの現場の工事台帳に自動保存しました。';
+  event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);
+ }catch(e){
+  $('pdfSaveStatus').textContent='自動保存できませんでした：'+(e.message||e);
+  event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);
+ }
+});
+$('openCamera').onclick=()=>{
+ const p=db.projects.find(x=>x.id===$('dProject').value);
+ if(!p){alert('先に対象現場を選択してください。');return;}
+ const u=new URL(PHOTO_MAKER_URL);
+ u.searchParams.set('projectId',p.id);u.searchParams.set('projectName',p.name);
+ const w=window.open(u.toString(),'photoPdfMaker');
+ if(!w)alert('ポップアップがブロックされました。ブラウザーでこのサイトのポップアップを許可してください。');
+ $('pdfSaveStatus').textContent='写真PDFメーカーでPDFを作成すると、この現場へ自動保存します。';
+};
+
+render();
+</script></body></html>
