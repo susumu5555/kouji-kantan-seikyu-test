@@ -45,12 +45,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
 <span>バックアップ</span>
 </button>
-<p class="notice">画面構成の試作です。各機能・ログイン・クラウド同期は、既存アプリとの統合後に接続します。</p>
+<p class="notice">現場データはこのブラウザーに保存されます。端末間の共有・クラウド同期は未接続です。</p>
 </main>
 <script>
 document.querySelectorAll('[data-feature]').forEach(button=>{
   button.addEventListener('click',()=>{
-    if(button.dataset.feature==='現場登録'){location.href='./field-register.html';return;} if(button.dataset.feature==='見積作成'){location.href='./invoice.html';return;} alert(button.dataset.feature+' は、次の統合作業で接続します。');
+    const routes={'現場登録':'./field-register.html','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?page=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html'};if(routes[button.dataset.feature]){location.href=routes[button.dataset.feature];return;}if(button.dataset.feature==='バックアップ'){const raw=localStorage.getItem('genbaThreeModule_v1');if(!raw){alert('このブラウザーに現場データがありません。');return;}const blob=new Blob([raw],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='工事管理バックアップ.json';a.click();URL.revokeObjectURL(url);return;}alert('この機能は現在利用できません。');
   });
 });
 </script>
