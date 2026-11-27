@@ -54,9 +54,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div id="pZipStatus" class="small" role="status" aria-live="polite"></div>
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pCity">市区町村</label><input id="pCity" autocomplete="address-level2" placeholder="市区町村">
-<label for="pTown">町域</label><input id="pTown" autocomplete="address-level3" placeholder="町域">
-<label for="pStreet">番地</label><input id="pStreet" placeholder="番地">
-<label for="pBuilding">建物名・部屋番号</label><input id="pBuilding" placeholder="任意">
+<label for="pTown">町域・番地・建物名</label><input id="pTown" autocomplete="address-line2" placeholder="例：〇〇町1-2-3 〇〇マンション101号">
+<label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
 <label>工事施工日</label><input id="pWorkDate" type="date">
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" data-page="home">ホームへ戻る</button></div>
 </div>
@@ -139,14 +138,14 @@ const initialPage=new URLSearchParams(location.search).get('page');
 if(['register','cases','schedule'].includes(initialPage)){document.getElementById('home').classList.add('hidden');document.getElementById(initialPage).classList.remove('hidden');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-$('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pCity').value,$('pTown').value,$('pStreet').value,$('pBuilding').value].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pCity','pTown','pStreet','pBuilding','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
+$('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pCity').value,$('pTown').value].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pCity','pTown','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
 window.toggleCompleted=function(pid){const p=db.projects.find(x=>x.id===pid);if(!p)return;p.completed=!p.completed;p.completedAt=p.completed?new Date().toISOString():null;save();render()};
 let projectPage=1;
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
  const sorted=[...db.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
- const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address].some(x=>(x||'').toLowerCase().includes(q))):sorted;
+ const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address,p.assignee].some(x=>(x||'').toLowerCase().includes(q))):sorted;
  const total=filtered.length;
  const pageCount=Math.max(1,Math.ceil(total/PROJECTS_PER_PAGE));
  if(projectPage>pageCount)projectPage=pageCount;
@@ -155,7 +154,7 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  const showCompleted=new URLSearchParams(location.search).get('page')==='completed';
  const visibleItems=pageItems.filter(p=>Boolean(p.completed)===showCompleted);
- $('projectList').innerHTML=visibleItems.length?visibleItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
+ $('projectList').innerHTML=visibleItems.length?visibleItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
 }
@@ -171,7 +170,7 @@ function renderSelectedProject(){
  $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name:'';
  if(!p){box.className='item empty';box.textContent='現場を選択すると、現場情報がここに表示されます。';return;}
  box.className='item';
- box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
+ box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
 }
 $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
 function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
