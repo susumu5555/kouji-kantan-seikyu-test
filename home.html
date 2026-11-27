@@ -16,7 +16,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .new{width:100%;min-height:112px;background:#fff;border:2px solid #3981c7;border-radius:16px;color:#1457a6;font-size:25px;font-weight:750;box-shadow:0 2px 8px #0000000a}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:30px}
 .tile{min-height:145px;background:#fff;border:1px solid #dce2ea;border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-size:19px;font-weight:700;box-shadow:0 2px 7px #00000009}
-.tile:active,.new:active{transform:scale(.99);background:#edf4fc}
+.tile:active,.new:active,.backup:active{transform:scale(.99);background:#edf4fc}
+.backup{width:100%;min-height:66px;margin-top:18px;background:#fff;border:1px solid #dce2ea;border-radius:14px;color:#1457a6;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 7px #00000009}
 .icon{width:35px;height:35px;display:block}
 .notice{margin:22px 2px 0;color:#657184;font-size:12px;line-height:1.7;text-align:center}
 @media(max-width:360px){.grid{gap:12px}.tile{font-size:17px;min-height:128px}}
@@ -40,6 +41,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h8l4 4v14H7zM15 3v5h5M10 13h6M10 17h6"/></svg>
 <span>見積作成</span></button>
 </section>
+<button class="backup" type="button" data-feature="バックアップ">
+<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
+<span>バックアップ</span>
+</button>
 <p class="notice">画面構成の試作です。各機能・ログイン・クラウド同期は、既存アプリとの統合後に接続します。</p>
 </main>
 <script>
