@@ -11,11 +11,6 @@
 @media(min-width:650px){.itemgrid{grid-template-columns:repeat(3,minmax(0,1fr))}.wrap{padding-top:22px}.tabs{max-width:650px}.tab{font-size:14px}}
 @media print{body{background:#fff}.no-print,header,.tabs{display:none!important}.wrap{padding:0;max-width:none}.printdoc{display:block!important}.panel{display:none!important}#printArea{display:block!important}.card{box-shadow:none;border:0;padding:0;margin:0}.doc{font-family:"Noto Sans JP",sans-serif;color:#111;padding:8mm}.doc h1{text-align:center;font-size:25px;letter-spacing:.5em;margin:0 0 22px}.doc .top{display:flex;justify-content:space-between;gap:20px}.doc table{width:100%;border-collapse:collapse;margin:18px 0;font-size:12px}.doc th,.doc td{border:1px solid #777;padding:8px;text-align:left}.doc th{background:#f1f1f1}.doc .num{text-align:right}.doc .sum{width:48%;margin-left:auto}.doc .sum div{display:flex;justify-content:space-between;padding:5px;border-bottom:1px solid #bbb}.doc .sum .last{font-size:18px;font-weight:bold;border-bottom:2px solid #111}.doc .issuer{text-align:right;white-space:pre-line}.doc .memo{margin-top:28px;border-top:1px solid #777;padding-top:10px;font-size:12px}.doc .stamp{margin:25px 0 0 auto;border:1px solid #555;width:110px;height:65px;display:flex;align-items:center;justify-content:center;font-size:11px}}
 
-#lockScreen{position:fixed;inset:0;z-index:1000;background:#f4f6f9;display:flex;align-items:center;justify-content:center;padding:20px}
-#lockScreen .lock-card{background:#fff;border:1px solid #dce2ea;border-radius:18px;padding:22px;width:min(100%,430px);box-shadow:0 8px 30px #0002}
-#lockScreen h2{margin:0 0 10px;font-size:20px}#lockScreen p{font-size:13px;line-height:1.7;color:#526071}
-#lockScreen input{width:100%;padding:14px;border:1px solid #cbd3df;border-radius:10px;font:inherit;margin:6px 0 12px}
-body.app-locked header,body.app-locked .wrap{visibility:hidden}
 
 
 .doc{font-family:"Noto Sans JP",sans-serif;color:#172033;padding:7mm;background:#fff}
@@ -63,12 +58,8 @@ body.app-locked header,body.app-locked .wrap{visibility:hidden}
  .doc tr{break-inside:avoid}
 }
 .category-tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 10px;margin:8px 0}.category-tab{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 16px;font-weight:800;color:var(--ink)}.category-tab.active{background:var(--blue);border-color:var(--blue);color:#fff}</style></head>
-<body class="app-locked">
-<div id="lockScreen"><div class="lock-card"><h2 id="lockTitle">データ保護の設定</h2>
-<p id="lockMessage">保存データを暗号化します。8文字以上のパスワードを設定してください。忘れると復元できません。</p>
-<label id="lockPasswordLabel" for="lockPassword">パスワード</label><input id="lockPassword" type="password" autocomplete="current-password" placeholder="8文字以上">
-<div id="lockConfirmWrap"><label for="lockPasswordConfirm">パスワード（確認）</label><input id="lockPasswordConfirm" type="password" autocomplete="new-password" placeholder="同じパスワードを再入力"></div>
-<button class="btn full" id="unlockButton">暗号化して開始</button><p id="lockError" role="alert" style="color:#b42318"></p></div></div>
+<body>
+<div id="migrationScreen" style="display:none;position:fixed;inset:0;z-index:1000;background:#f4f6f9;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border:1px solid #dce2ea;border-radius:18px;padding:22px;width:min(100%,430px)"><h2>初回データ移行</h2><p>以前の暗号化データを引き継ぐため、現在のパスワードを今回だけ入力してください。移行後はパスワード入力と自動ロックはなくなります。</p><label for="migrationPassword">現在のパスワード</label><input id="migrationPassword" type="password" autocomplete="current-password" style="width:100%;padding:14px;margin:8px 0"><button class="btn full" id="migrationButton">データを移行して開く</button><p id="migrationError" role="alert" style="color:#b42318"></p></div></div>
 <header><h1>工事かんたん請求</h1><small>追加工事の選択・請求書・領収書</small></header>
 <div class="wrap">
 <nav class="tabs no-print"><button class="tab active" data-tab="new">新規工事</button><button class="tab" data-tab="history">工事履歴</button><button class="tab" data-tab="items">項目・料金</button><button class="tab" data-tab="settings">会社・設定</button></nav>
@@ -80,28 +71,9 @@ body.app-locked header,body.app-locked .wrap{visibility:hidden}
 </section>
 <section id="history" class="panel"><div class="card"><h2>工事履歴</h2><div class="hint">保存した工事から、見積書・請求書・領収書の3種類をPDFで作成できます。領収書は入金済みの工事のみ発行できます。</div><div id="historyList" class="empty">まだ保存された工事はありません。</div></div></section>
 <section id="items" class="panel"><div class="card"><h2>追加工事項目・料金の編集</h2><p class="hint">タブでカテゴリーを切り替えて、項目と料金を管理できます。新しいカテゴリー名も追加できます。</p><div id="categoryTabs" class="category-tabs"></div><div class="field"><label>カテゴリー（タブ）</label><input id="newCat" list="categoryOptions" placeholder="例：AT、エコキュート"><datalist id="categoryOptions"></datalist></div><div class="field"><label>工事項目名</label><input id="newItem" placeholder="例：機器取付"></div><div class="field"><label>税抜単価（円）</label><input id="newPrice" type="number" min="0" placeholder="金額未確定なら空欄"></div><button class="btn full" id="addItem">このカテゴリーに項目を追加</button><div id="manageItems"></div></div></section>
-<section id="settings" class="panel"><div class="card"><h2>会社情報・税率</h2><div class="field"><label>会社名</label><input id="company" placeholder="会社名"></div><div class="field"><label>住所</label><input id="companyAddress" placeholder="会社住所"></div><div class="field"><label>電話番号</label><input id="companyPhone" placeholder="電話番号"></div><div class="field"><label>メールアドレス</label><input id="companyEmail" type="email" placeholder="会社メールアドレス"></div><div class="field"><label>インボイス登録番号</label><input id="invoiceNumber" placeholder="Tから始まる登録番号"></div><div class="field"><label>見積書の件名</label><input id="estimateSubject" maxlength="80" placeholder="例：エアコン工事のお見積り"></div><div class="field"><label>請求書の件名</label><input id="invoiceSubject" maxlength="80" placeholder="例：エアコン工事代"></div><p class="hint">ここで設定した件名は、新規工事の見積書・請求書に反映されます。保存済み工事に個別の件名がある場合はその件名を優先し、個別の件名がない場合は現在の設定を使用します。</p><div class="field"><label>消費税率（％）</label><input id="taxRate" type="number" min="0" max="100" step="0.1" value="10"></div><button class="btn full" id="saveSettings">設定を保存</button></div><div class="card"><h2>暗号化バックアップ・復元</h2><p class="hint">工事データはこの端末・このブラウザ内に暗号化して保存します。バックアップファイルもアプリのロック解除パスワードで暗号化します。バックアップ作成時に別のパスワード設定は不要です。別端末で復元する場合は、バックアップ作成時のアプリのロック解除パスワードを入力してください。端末間の自動同期は行いません。</p><p id="backupPasswordStatus" class="hint">バックアップはアプリのロック解除パスワードで暗号化されます。</p><div class="actions"><button class="btn" id="backup">暗号化バックアップを書き出す</button><button class="btn secondary" id="emailBackup">メールに添付して送る</button></div><div class="actions" style="margin-top:8px"><button class="btn gray" id="restoreBtn">バックアップを読み込む</button><input id="restoreFile" type="file" accept=".kbackup,.json,application/json" class="hidden"></div><p class="hint">メール添付は端末の共有メニューを開きます。メールアプリを選び、宛先を確認して送信してください。共有メニューに対応しない場合はファイルを保存し、メールに手動添付します。クラウドへ保存する場合も暗号化ファイルだけを保存してください。</p><div class="notice">アプリのロック解除パスワードを忘れると、バックアップを復元できません。パスワードはバックアップファイルとは別の安全な場所に保管してください。暗号化バックアップには法人情報・工事履歴・設定・項目情報が含まれます。</div></div><div class="notice">初期の工事項目は一般的な候補です。価格・工事内容・税区分は実際の会社ルールに合わせて確認してからご利用ください。</div></section>
+<section id="settings" class="panel"><div class="card"><h2>会社情報・税率</h2><div class="field"><label>会社名</label><input id="company" placeholder="会社名"></div><div class="field"><label>住所</label><input id="companyAddress" placeholder="会社住所"></div><div class="field"><label>電話番号</label><input id="companyPhone" placeholder="電話番号"></div><div class="field"><label>メールアドレス</label><input id="companyEmail" type="email" placeholder="会社メールアドレス"></div><div class="field"><label>インボイス登録番号</label><input id="invoiceNumber" placeholder="Tから始まる登録番号"></div><div class="field"><label>見積書の件名</label><input id="estimateSubject" maxlength="80" placeholder="例：エアコン工事のお見積り"></div><div class="field"><label>請求書の件名</label><input id="invoiceSubject" maxlength="80" placeholder="例：エアコン工事代"></div><p class="hint">ここで設定した件名は、新規工事の見積書・請求書に反映されます。保存済み工事に個別の件名がある場合はその件名を優先し、個別の件名がない場合は現在の設定を使用します。</p><div class="field"><label>消費税率（％）</label><input id="taxRate" type="number" min="0" max="100" step="0.1" value="10"></div><button class="btn full" id="saveSettings">設定を保存</button></div><div class="card"><h2>バックアップ・復元</h2><p class="hint">工事データはこの端末・このブラウザ内に保存します。バックアップはパスワードなしのJSON形式です。端末間の自動同期は行いません。</p><p id="backupPasswordStatus" class="hint">バックアップはアプリのロック解除パスワードで暗号化されます。</p><div class="actions"><button class="btn" id="backup">暗号化バックアップを書き出す</button><button class="btn secondary" id="emailBackup">メールに添付して送る</button></div><div class="actions" style="margin-top:8px"><button class="btn gray" id="restoreBtn">バックアップを読み込む</button><input id="restoreFile" type="file" accept=".kbackup,.json,application/json" class="hidden"></div><p class="hint">メール添付は端末の共有メニューを開きます。メールアプリを選び、宛先を確認して送信してください。共有メニューに対応しない場合はファイルを保存し、メールに手動添付します。クラウドへ保存する場合も暗号化ファイルだけを保存してください。</p><div class="notice">バックアップには法人情報・工事履歴・設定・項目情報が含まれます。個人情報・工事情報を含むため、ファイルを安全に保管してください。</div></div><div class="notice">初期の工事項目は一般的な候補です。価格・工事内容・税区分は実際の会社ルールに合わせて確認してからご利用ください。</div></section>
 <div id="printArea" class="printdoc hidden"></div>
 </div>
-<script>
-(function(){
- function report(message){
-  var el=document.getElementById('lockError');
-  if(el)el.textContent=message;
- }
- window.__koujiBootError='';
- window.addEventListener('error',function(e){window.__koujiBootError=(e.message||'詳細不明')+'（行 '+(e.lineno||'?')+'）';report('起動エラー：'+window.__koujiBootError)});
- window.addEventListener('unhandledrejection',function(e){window.__koujiBootError=(e.reason&&e.reason.message||String(e.reason||'詳細不明'));report('処理エラー：'+window.__koujiBootError)});
- document.addEventListener('DOMContentLoaded',function(){
-  var button=document.getElementById('unlockButton');
-  if(!button){report('診断：開始ボタンが見つかりません');return}
-  button.addEventListener('click',function(){
-   var handlerState=button.onclick===null?'未登録（null）':typeof button.onclick;
-   report('診断：タップ検知。メイン処理='+handlerState+'。起動時エラー='+(window.__koujiBootError||'検知なし')+'。暗号化API='+(window.crypto&&crypto.subtle?'利用可能':'利用不可'));
-  },true);
- });
-})();
-</script>
 <script>
 window.addEventListener('error',event=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ起動エラー：'+(event.message||'不明なエラー')});
 window.addEventListener('unhandledrejection',event=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ起動エラー：'+(event.reason?.message||String(event.reason||'不明なエラー'))});
@@ -117,7 +89,7 @@ let data=load();let cart=[];let activeJob=null;let selectedCorporationId='';
 function normalizeData(d){d=d||{items:defaultItems,settings:{tax:10,company:'',companyAddress:'',companyPhone:'',companyEmail:'',invoiceNumber:'',estimateSubject:'工事のお見積り',invoiceSubject:'工事代'},jobs:[]};if(!Array.isArray(d.items)||!Array.isArray(d.jobs)||(d.settings!==undefined&&(!d.settings||typeof d.settings!=='object'||Array.isArray(d.settings)))||(d.corporations!==undefined&&!Array.isArray(d.corporations)))throw Error('保存データの構造が正しくありません。元データを保持したまま起動を中止しました。暗号化バックアップからの復元を確認してください。');if(d.items.some(x=>!x||typeof x!=='object'||Array.isArray(x))||d.jobs.some(x=>!x||typeof x!=='object'||Array.isArray(x))||(d.corporations||[]).some(x=>!x||typeof x!=='object'||Array.isArray(x)))throw Error('保存データに不正な項目があります。データを自動削除せず、元データを保持しました。バックアップを確認してください。');d.settings=d.settings||{tax:10,company:'',companyAddress:'',companyPhone:'',companyEmail:'',invoiceNumber:''};d.settings.companyEmail=d.settings.companyEmail||'';d.settings.invoiceNumber=d.settings.invoiceNumber||'';d.settings.estimateSubject=d.settings.estimateSubject||'工事のお見積り';d.settings.invoiceSubject=d.settings.invoiceSubject||'工事代';d.corporations=d.corporations||[];d.jobs.forEach(j=>{let c=j.customer;if(c&&c.type==='法人'&&c.name&&!d.corporations.some(x=>x.name===c.name&&x.address===c.address)){d.corporations.push({id:'corp_'+(j.id||Date.now()),...c})}});return applySampleCatalog(d)}
 function load(){let d;try{d=JSON.parse(localStorage.getItem('koujiAppData'))}catch(e){}return normalizeData(d)}
 let storageKey=null,persistQueue=Promise.resolve();
-function persist(){if(!storageKey)throw new Error('データ保護のロックが解除されていません');const snapshot=JSON.stringify(data);const operation=persistQueue.catch(()=>{}).then(async()=>{const previousEncrypted=localStorage.getItem('koujiAppDataEncrypted'),previousLegacy=localStorage.getItem('koujiAppData');const iv=randomBytes(12),cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},storageKey,new TextEncoder().encode(snapshot));const payload=JSON.stringify({format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:getPasswordConfig().salt,iv:b64(iv),ciphertext:b64(cipher)});try{localStorage.setItem('koujiAppDataEncrypted',payload);if(localStorage.getItem('koujiAppDataEncrypted')!==payload)throw new Error('保存データの読み戻し確認に失敗しました');localStorage.removeItem('koujiAppData');if(localStorage.getItem('koujiAppData')!==null)throw new Error('旧データの削除確認に失敗しました')}catch(saveError){const rollbackErrors=[];for(const [key,value] of [['koujiAppDataEncrypted',previousEncrypted],['koujiAppData',previousLegacy]]){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value);if(localStorage.getItem(key)!==value)throw Error('差し戻しの読み戻し確認に失敗しました')}catch(rollbackError){rollbackErrors.push(key+'：'+(rollbackError.message||rollbackError))}}if(rollbackErrors.length)throw Error('データ保存に失敗し、変更前データの差し戻しも完全には確認できませんでした。アプリを閉じず、バックアップを保管してください。保存エラー：'+(saveError.message||saveError)+'／差し戻しエラー：'+rollbackErrors.join('／'));throw Error('データ保存に失敗したため、変更前データへ戻したことを確認しました：'+(saveError.message||saveError))}});persistQueue=operation;return operation}
+function persist(){const snapshot=JSON.stringify(data);try{localStorage.setItem('koujiAppData',snapshot);if(localStorage.getItem('koujiAppData')!==snapshot)throw Error('保存内容の読み戻し確認に失敗しました');return Promise.resolve()}catch(e){return Promise.reject(new Error('データを保存できませんでした：'+(e.message||e)))}}
 const $=id=>document.getElementById(id);const yen=n=>(Number(n)||0).toLocaleString('ja-JP')+'円';const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function tab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===name));if(name==='history')renderHistory();if(name==='items')renderManage()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
@@ -306,275 +278,36 @@ $('saveSettings').onclick=async()=>{const emailInput=$('companyEmail');if(emailI
 const BACKUP_ITERATIONS=310000;
 const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes)));
 const unb64=str=>Uint8Array.from(atob(str),c=>c.charCodeAt(0));
-const randomBytes=n=>crypto.getRandomValues(new Uint8Array(n));
-async function deriveAesKey(password,salt,iterations){let material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
-async function passwordVerifier(password,salt,iterations){let material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);let bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,256);return b64(bits)}
+async function deriveAesKey(password,salt,iterations){const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['decrypt'])}
+async function passwordVerifier(password,salt,iterations){const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,256))}
 function constantTimeEqual(a,b){if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;let x=0;for(let i=0;i<a.length;i++)x|=a.charCodeAt(i)^b.charCodeAt(i);return x===0}
-function getPasswordConfig(){try{return JSON.parse(localStorage.getItem('koujiBackupPasswordConfig')||'null')}catch(e){return null}}
-function updatePasswordStatus(){$('backupPasswordStatus').textContent='バックアップはアプリのロック解除パスワードで暗号化されます。'}
-
-function downloadBlob(blob,name){
- const url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
- setTimeout(()=>URL.revokeObjectURL(url),30000);
-}
-async function makeEncryptedBackup(){
- if(!crypto?.subtle)throw Error('暗号化機能が使えません。HTTPS対応のブラウザで開いてください。');
- const cfg=getPasswordConfig();
- if(!cfg||!storageKey)throw Error('アプリのロック解除情報が確認できません。いったんロックし、パスワードで再度解除してください。');
- await persistQueue;
- const snapshot=JSON.stringify(data);
- if(typeof snapshot!=='string')throw Error('保存データを読み取れません');
- const snapshotData=JSON.parse(snapshot);
- const exported={app:'工事かんたん請求',version:1,exportedAt:new Date().toISOString(),data:snapshotData};
- const plainText=JSON.stringify(exported),plain=new TextEncoder().encode(plainText);
- const iv=randomBytes(12);
- const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},storageKey,plain);
- const verifiedBuffer=await crypto.subtle.decrypt({name:'AES-GCM',iv},storageKey,cipher);
- const verifiedText=new TextDecoder().decode(verifiedBuffer);
- if(verifiedText!==plainText)throw Error('暗号化データの読み戻し検証に失敗しました');
- const verified=JSON.parse(verifiedText),d=verified&&verified.data;
- if(verified.app!=='工事かんたん請求'||verified.version!==1||!d||!Array.isArray(d.items)||!Array.isArray(d.jobs)||!d.settings||typeof d.settings!=='object'||Array.isArray(d.settings)||(d.corporations!==undefined&&!Array.isArray(d.corporations)))throw Error('バックアップのデータ構造検査に失敗しました');
- if(JSON.stringify(d)!==snapshot)throw Error('バックアップ内のデータが作成時の保存データと一致しません');
- const packageData={format:'KOUJI-KBACKUP-2',cipher:'AES-256-GCM',kdf:'PBKDF2-SHA-256',iterations:cfg.iterations,salt:cfg.salt,iv:b64(iv),ciphertext:b64(cipher)};
- return new Blob([JSON.stringify(packageData)],{type:'application/octet-stream'});
-}
-$('backup').onclick=async()=>{try{let blob=await makeEncryptedBackup();if(blob)downloadBlob(blob,'工事かんたん請求_暗号化バックアップ_'+todayLocalDate()+'.kbackup')}catch(e){alert('バックアップを作成できませんでした：'+e.message)}};
-$('emailBackup').onclick=async()=>{try{let blob=await makeEncryptedBackup();if(!blob)return;let file=new File([blob],'工事かんたん請求_暗号化バックアップ_'+todayLocalDate()+'.kbackup',{type:'application/octet-stream'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:'工事かんたん請求バックアップ',text:'暗号化バックアップファイルです。復元にはバックアップ作成時のアプリのロック解除パスワードが必要です。',files:[file]})}else{downloadBlob(blob,file.name);alert('この端末ではファイル添付の共有メニューに対応していません。保存した.kbackupファイルをメールアプリで手動添付してください。')}}catch(e){if(e.name!=='AbortError')alert('共有を開始できませんでした：'+e.message)}};
+function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+function makePlainBackup(){return new Blob([JSON.stringify({app:'工事かんたん請求',version:1,exportedAt:new Date().toISOString(),data})],{type:'application/json'})}
+$('backup').onclick=()=>{try{downloadBlob(makePlainBackup(),'工事かんたん請求_バックアップ_'+todayLocalDate()+'.json')}catch(e){alert('バックアップを作成できませんでした：'+e.message)}};
+$('emailBackup').onclick=async()=>{try{const blob=makePlainBackup(),file=new File([blob],'工事かんたん請求_バックアップ_'+todayLocalDate()+'.json',{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:'工事かんたん請求バックアップ',text:'個人情報・工事情報が含まれるため、送信先に注意してください。',files:[file]})}else{downloadBlob(blob,file.name);alert('バックアップを保存しました。メールに手動添付してください。')}}catch(e){if(e.name!=='AbortError')alert('共有を開始できませんでした：'+e.message)}};
 $('restoreBtn').onclick=()=>$('restoreFile').click();
-$('restoreFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let raw=JSON.parse(await f.text()),x;if(raw.format==='KOUJI-KBACKUP-2'||raw.format==='KOUJI-KBACKUP-1'){if(!crypto?.subtle)throw Error('暗号化機能が使えません。HTTPS対応のブラウザで開いてください。');if(raw.cipher!=='AES-256-GCM'||raw.kdf!=='PBKDF2-SHA-256'||!Number.isInteger(raw.iterations)||raw.iterations<100000||raw.iterations>2000000)throw Error('バックアップの暗号化設定が不正です');if(typeof raw.salt!=='string'||typeof raw.iv!=='string'||typeof raw.ciphertext!=='string'||!/^[A-Za-z0-9+/]+={0,2}$/.test(raw.salt)||!/^[A-Za-z0-9+/]+={0,2}$/.test(raw.iv)||!/^[A-Za-z0-9+/]+={0,2}$/.test(raw.ciphertext))throw Error('バックアップの暗号データ形式が不正です');const saltBytes=unb64(raw.salt),ivBytes=unb64(raw.iv),cipherBytes=unb64(raw.ciphertext);if(saltBytes.length!==16||ivBytes.length!==12||cipherBytes.length<16)throw Error('バックアップの暗号データ長が不正です');let password=prompt('バックアップ作成時のアプリのロック解除パスワードを入力してください');if(password===null)return;if(raw.format==='KOUJI-KBACKUP-1'){let pc=raw.passwordCheck;if(!pc||!pc.salt||!pc.verifier||!Number.isInteger(pc.iterations)||pc.iterations<100000||pc.iterations>2000000)throw Error('旧バックアップのパスワード検証情報が不正です');if(!constantTimeEqual(await passwordVerifier(password,unb64(pc.salt),pc.iterations),pc.verifier))throw Error('パスワードが違います')}let key=await deriveAesKey(password,unb64(raw.salt),raw.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(raw.iv)},key,unb64(raw.ciphertext));let parsed=JSON.parse(new TextDecoder().decode(plain));if(!parsed||parsed.app!=='工事かんたん請求'||parsed.version!==1)throw Error('バックアップのアプリ情報またはバージョンが一致しません');x=parsed.data}else if(raw.items&&raw.settings&&raw.jobs){if(!confirm('このファイルは暗号化されていない旧形式のバックアップです。内容を読み込んでよいですか？'))return;x=raw}else throw Error('バックアップ形式が正しくありません');if(!x||!Array.isArray(x.items)||!Array.isArray(x.jobs)||!x.settings||typeof x.settings!=='object'||Array.isArray(x.settings)||(x.corporations!==undefined&&!Array.isArray(x.corporations)))throw Error('バックアップ内容またはデータ形式が不正です');if(!confirm('復元前に、現在の端末データを暗号化バックアップとして書き出します。続行しますか？'))return;const safetyBlob=await makeEncryptedBackup();if(!safetyBlob)throw Error('現在データの退避を中止したため、復元も中止しました');const safetyName='工事かんたん請求_復元前退避_'+todayLocalDate()+'.kbackup';downloadBlob(safetyBlob,safetyName);if(!confirm('復元前の退避ファイルのダウンロードを開始しました。端末に保存されたことを確認できた場合のみ「OK」を押してください。保存できていない場合はキャンセルしてください。'))return;const previous=JSON.stringify(data),previousEncrypted=localStorage.getItem('koujiAppDataEncrypted'),previousLegacy=localStorage.getItem('koujiAppData');data=normalizeData(x);try{await persist();const restoredRaw=JSON.parse(localStorage.getItem('koujiAppDataEncrypted')||'null');if(!restoredRaw||!restoredRaw.ciphertext)throw Error('復元後の暗号化データが見つかりません');const restoredPlain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(restoredRaw.iv)},storageKey,unb64(restoredRaw.ciphertext));const restoredData=JSON.parse(new TextDecoder().decode(restoredPlain));if(JSON.stringify(restoredData)!==JSON.stringify(data))throw Error('復元後のデータ照合に失敗しました')}catch(saveError){data=JSON.parse(previous);let rollbackErrors=[];try{if(previousEncrypted===null)localStorage.removeItem('koujiAppDataEncrypted');else localStorage.setItem('koujiAppDataEncrypted',previousEncrypted);if(localStorage.getItem('koujiAppDataEncrypted')!==previousEncrypted)throw Error('暗号化データの確認に失敗')}catch(rollbackError){rollbackErrors.push('暗号化データ：'+(rollbackError.message||rollbackError))}try{if(previousLegacy===null)localStorage.removeItem('koujiAppData');else localStorage.setItem('koujiAppData',previousLegacy);if(localStorage.getItem('koujiAppData')!==previousLegacy)throw Error('旧データの確認に失敗')}catch(rollbackError){rollbackErrors.push('旧データ：'+(rollbackError.message||rollbackError))}if(rollbackErrors.length)throw new Error('復元保存に失敗し、端末内データの差し戻しも完全には確認できませんでした。アプリを閉じず、退避ファイルを保管してください。保存エラー：'+(saveError.message||saveError)+'／差し戻しエラー：'+rollbackErrors.join('／'));throw new Error('復元データの保存に失敗したため、端末内データを復元前の状態に戻しました。詳細：'+(saveError.message||saveError))}loadSettings();renderCatalog();renderCart();renderManage();renderHistory();renderCorporations();updatePasswordStatus();alert('バックアップを復元し、暗号化保存まで完了しました。復元前の退避ファイルも作成済みです。')}catch(err){alert('復元できませんでした：'+err.message)}finally{e.target.value=''}};
-updatePasswordStatus();
-
-// Dropbox接続・同期・ファイル整理機能は廃止しました。
-try{sessionStorage.removeItem('koujiDropboxAccessToken');sessionStorage.removeItem('koujiDropboxOAuthState');sessionStorage.removeItem('koujiDropboxPkceVerifier');localStorage.removeItem('koujiDropboxSyncRevision')}catch(e){}
-
-function commitPasswordMigration(config,encrypted){
- const previous={config:localStorage.getItem('koujiBackupPasswordConfig'),encrypted:localStorage.getItem('koujiAppDataEncrypted'),legacy:localStorage.getItem('koujiAppData')};
- const restore=(key,value)=>{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)};
- const verify=(key,value)=>{if(localStorage.getItem(key)!==value)throw Error(key+'の読み戻し確認に失敗しました')};
- const nextConfig=JSON.stringify(config),nextEncrypted=JSON.stringify(encrypted);
- try{
-  localStorage.setItem('koujiBackupPasswordConfig',nextConfig);verify('koujiBackupPasswordConfig',nextConfig);
-  localStorage.setItem('koujiAppDataEncrypted',nextEncrypted);verify('koujiAppDataEncrypted',nextEncrypted);
-  localStorage.removeItem('koujiAppData');verify('koujiAppData',null);
- }catch(saveError){
-  const restoreErrors=[];
-  for(const [key,value] of [['koujiBackupPasswordConfig',previous.config],['koujiAppDataEncrypted',previous.encrypted],['koujiAppData',previous.legacy]]){
-   try{restore(key,value);verify(key,value)}catch(restoreError){restoreErrors.push(key+'：'+(restoreError.message||restoreError))}
-  }
-  if(restoreErrors.length)throw Error('パスワード移行の保存に失敗し、元データの差し戻しも完全には確認できませんでした。アプリを閉じず、保存領域を確認してください。保存エラー：'+(saveError.message||saveError)+'／差し戻しエラー：'+restoreErrors.join('／'));
-  throw Error('パスワード移行の保存に失敗したため、変更前の状態へ戻したことを確認しました：'+(saveError.message||saveError));
- }
-}
-
-
-const UNLOCK_SESSION_ACTIVITY_KEY='koujiUnlockSessionLastActivity';
-const UNLOCK_SESSION_DB='kouji-kantan-unlock-session';
-const UNLOCK_SESSION_STORE='keys';
-function openUnlockSessionDb(){
- return new Promise((resolve,reject)=>{
-  const req=indexedDB.open(UNLOCK_SESSION_DB,1);
-  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(UNLOCK_SESSION_STORE))db.createObjectStore(UNLOCK_SESSION_STORE)};
-  req.onsuccess=()=>resolve(req.result);
-  req.onerror=()=>reject(req.error||new Error('ログイン状態の保存領域を開けません'));
- });
-}
-async function saveUnlockSessionKey(key){
- const db=await openUnlockSessionDb();
- try{await new Promise((resolve,reject)=>{
-  const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
-  tx.objectStore(UNLOCK_SESSION_STORE).put(key,'app-key');
-  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を保存できません'));
- });}finally{db.close()}
- try{
-  localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(Date.now()));
-  if(!localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY))throw Error('ログイン時刻の読み戻し確認に失敗しました');
- }catch(activitySaveError){
-  try{
-   const cleanupDb=await openUnlockSessionDb();
-   try{await new Promise((resolve,reject)=>{
-    const tx=cleanupDb.transaction(UNLOCK_SESSION_STORE,'readwrite');
-    tx.objectStore(UNLOCK_SESSION_STORE).delete('app-key');
-    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('一時ログイン鍵を消去できません'));
-   });}finally{cleanupDb.close()}
-   localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);
-  }catch(cleanupError){
-   throw Error('ログイン状態の保存に失敗し、一時ログイン情報の消去も確認できませんでした。アプリを閉じずに再試行してください。保存エラー：'+(activitySaveError.message||activitySaveError)+'／消去エラー：'+(cleanupError.message||cleanupError));
-  }
-  throw Error('ログイン時刻を保存できなかったため、一時ログイン鍵を消去しました：'+(activitySaveError.message||activitySaveError));
- }
-}
-async function readUnlockSessionKey(){
- const db=await openUnlockSessionDb();
- try{return await new Promise((resolve,reject)=>{
-  const tx=db.transaction(UNLOCK_SESSION_STORE,'readonly'),req=tx.objectStore(UNLOCK_SESSION_STORE).get('app-key');
-  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
- });}finally{db.close()}
-}
-async function clearUnlockSession(){
- const errors=[];
- try{localStorage.removeItem(UNLOCK_SESSION_ACTIVITY_KEY);if(localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY)!==null)throw Error('ログイン時刻の削除確認に失敗しました')}catch(e){errors.push('ログイン時刻：'+(e.message||e))}
- try{
-  const db=await openUnlockSessionDb();
-  try{await new Promise((resolve,reject)=>{
-   const tx=db.transaction(UNLOCK_SESSION_STORE,'readwrite');
-   tx.objectStore(UNLOCK_SESSION_STORE).delete('app-key');
-   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('ログイン状態を消去できません'));
-  });}finally{db.close()}
-  const remaining=await readUnlockSessionKey();
-  if(remaining)throw Error('一時ログイン鍵の削除確認に失敗しました');
- }catch(e){errors.push('一時ログイン鍵：'+(e.message||e))}
- if(errors.length)console.warn('一時ログイン状態の一部または全部を消去できませんでした',errors.join('／'));
-}
-async function restoreUnlockSession(){
- try{
-  const last=Number(localStorage.getItem(UNLOCK_SESSION_ACTIVITY_KEY));
-  if(!Number.isFinite(last)||last<=0||last>Date.now()||Date.now()-last>=INACTIVITY_TIMEOUT_MS){await clearUnlockSession();return null}
-  const key=await readUnlockSessionKey();
-  if(!key){await clearUnlockSession();return null}
-  const encrypted=localStorage.getItem('koujiAppDataEncrypted');
-  if(!encrypted){await clearUnlockSession();return null}
-  const enc=JSON.parse(encrypted);
-  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
-  return {key,data:normalizeData(JSON.parse(new TextDecoder().decode(plain))),lastActivity:last};
- }catch(e){
-  console.warn('一時ログイン状態の復元に失敗しました。保存情報は消去せず保持します。',e);
-  const screen=document.getElementById('lockError');
-  if(screen)screen.textContent='前回のログイン状態を復元できませんでした。保存情報は保持しています。パスワードで解除してください。';
-  return null;
- }
-}
-
-const INACTIVITY_TIMEOUT_MS=30*60*1000;
-let inactivityLastActivity=0,inactivityTimer=null,inactivityListenersInstalled=false;
-function resetInactivityTimer(){
- if(document.hidden||document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
- inactivityLastActivity=Date.now();
- try{localStorage.setItem(UNLOCK_SESSION_ACTIVITY_KEY,String(inactivityLastActivity))}catch(e){}
- if(inactivityTimer)clearTimeout(inactivityTimer);
- inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS);
-}
-async function lockAfterInactivity(){
- if(document.body.classList.contains('app-locked')||$('lockScreen').style.display!=='none')return;
- const elapsed=Date.now()-inactivityLastActivity;
- if(elapsed>=0&&elapsed<INACTIVITY_TIMEOUT_MS){inactivityTimer=setTimeout(lockAfterInactivity,INACTIVITY_TIMEOUT_MS-elapsed);return}
- try{await persistQueue}catch(e){console.error('自動ロック前の保存待機に失敗しました',e)}
- await clearUnlockSession();
- storageKey=null;
- $('lockTitle').textContent='アプリのロック解除';
- $('lockMessage').textContent='30分間操作がなかったためロックしました。設定したパスワードを入力してください。';
- $('lockPasswordLabel').textContent='パスワード';
- $('lockConfirmWrap').style.display='none';
- $('lockPassword').value='';
- $('lockPasswordConfirm').value='';
- $('lockError').textContent='';
- $('unlockButton').textContent='ロックを解除';
- $('lockScreen').style.display='flex';
- document.body.classList.add('app-locked');
- $('unlockButton').onclick=async()=>{
-  $('lockError').textContent='';
-  try{
-   const cfg=getPasswordConfig(),encrypted=localStorage.getItem('koujiAppDataEncrypted'),pw=$('lockPassword').value;
-   if(!cfg||!encrypted)throw Error('暗号化データまたはパスワード情報が見つかりません。');
-   if(!constantTimeEqual(await passwordVerifier(pw,unb64(cfg.salt),cfg.iterations),cfg.verifier))throw Error('パスワードが違います。');
-   const enc=JSON.parse(encrypted),key=await deriveAesKey(pw,unb64(enc.salt||cfg.salt),cfg.iterations);
-   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
-   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));
-   storageKey=key;
-   await saveUnlockSessionKey(key);
-   $('lockScreen').style.display='none';
-   document.body.classList.remove('app-locked');
-   $('lockPassword').value='';
-   $('lockPasswordConfirm').value='';
-   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
-   resetInactivityTimer();
-  }catch(err){$('lockError').textContent=err.message||'ロックを解除できませんでした';}
- };
-}
-function activateInactivityLock(lastActivity=null){
- if(!inactivityListenersInstalled){
-  const events=['pointerdown','keydown','touchstart','click','input','change','scroll'];
-  events.forEach(name=>document.addEventListener(name,resetInactivityTimer,{passive:true}));
-  document.addEventListener('visibilitychange',()=>{
-   if(!document.hidden&&inactivityLastActivity&&Date.now()-inactivityLastActivity>=INACTIVITY_TIMEOUT_MS)lockAfterInactivity();
-  });
-  inactivityListenersInstalled=true;
- }
- if(Number.isFinite(lastActivity)&&lastActivity>0){
-  inactivityLastActivity=lastActivity;
-  if(inactivityTimer)clearTimeout(inactivityTimer);
-  const remaining=INACTIVITY_TIMEOUT_MS-(Date.now()-lastActivity);
-  if(remaining<=0)lockAfterInactivity();
-  else inactivityTimer=setTimeout(lockAfterInactivity,remaining);
- }else resetInactivityTimer();
-}
-
-async function startProtectedApp(){
- const encrypted=localStorage.getItem('koujiAppDataEncrypted'),cfg=getPasswordConfig(),legacy=localStorage.getItem('koujiAppData');
- const title=$('lockTitle'),msg=$('lockMessage'),confirmWrap=$('lockConfirmWrap'),btn=$('unlockButton');
- if(encrypted){title.textContent='アプリのロック解除';msg.textContent='保存データは暗号化されています。設定したパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='ロックを解除';$('lockPasswordLabel').textContent='パスワード';}
- else if(cfg){title.textContent='保存データを暗号化';msg.textContent='既存データを暗号化します。以前にバックアップ用パスワードを設定した場合は同じパスワードを入力してください。';confirmWrap.style.display='none';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='登録済みパスワード';}
- else {title.textContent='データ保護の設定';msg.textContent='このアプリの保存データを暗号化します。8文字以上のパスワードを設定してください。忘れると復元できません。';confirmWrap.style.display='block';btn.textContent='暗号化して開始';$('lockPasswordLabel').textContent='新しいパスワード';}
- btn.onclick=async()=>{const pw=$('lockPassword').value,pw2=$('lockPasswordConfirm').value;$('lockError').textContent='処理を開始しています…';btn.disabled=true;btn.textContent='処理中…';try{
-  $('lockError').textContent='暗号化機能を確認しています…';if(!crypto?.subtle)throw Error('暗号化機能を使えません。HTTPSで開いてください。');
-  let activeCfg=cfg;
-  if(encrypted){
-   if(!activeCfg)throw Error('パスワード情報がありません。暗号化バックアップからの復元が必要です。');
-   if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');
-   const enc=JSON.parse(encrypted),key=await deriveAesKey(pw,unb64(enc.salt||activeCfg.salt),activeCfg.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
-   data=normalizeData(JSON.parse(new TextDecoder().decode(plain)));storageKey=key;await persist();
-   if(pw.length<8){
-    alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
-    const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
-    if(next===null)throw Error('パスワード変更をキャンセルしました。');
-    if(next.length<8)throw Error('新しいパスワードは8文字以上にしてください。');
-    const again=prompt('確認のため、新しいパスワードをもう一度入力してください。');
-    if(again===null)throw Error('パスワード変更をキャンセルしました。');
-    if(next!==again)throw Error('新しいパスワードが一致しません。もう一度ロック解除してください。');
-    const salt=randomBytes(16),iv=randomBytes(12),newKey=await deriveAesKey(next,salt,BACKUP_ITERATIONS);
-    const verifier=await passwordVerifier(next,salt,BACKUP_ITERATIONS);
-    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},newKey,new TextEncoder().encode(JSON.stringify(data)));
-    commitPasswordMigration({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS},{format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
-    storageKey=newKey;
-    alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
-   }
-  }else{
-   if(activeCfg){if(!constantTimeEqual(await passwordVerifier(pw,unb64(activeCfg.salt),activeCfg.iterations),activeCfg.verifier))throw Error('パスワードが違います。');}
-   else {if(pw.length<8)throw Error('パスワードは8文字以上にしてください。');if(pw!==pw2)throw Error('確認用パスワードが一致しません。');$('lockError').textContent='パスワードを安全に登録しています…';const salt=randomBytes(16);activeCfg={salt:b64(salt),verifier:await passwordVerifier(pw,salt,BACKUP_ITERATIONS),iterations:BACKUP_ITERATIONS};const configText=JSON.stringify(activeCfg),previousConfig=localStorage.getItem('koujiBackupPasswordConfig');try{localStorage.setItem('koujiBackupPasswordConfig',configText);if(localStorage.getItem('koujiBackupPasswordConfig')!==configText)throw Error('パスワード情報の読み戻し確認に失敗しました')}catch(configSaveError){try{if(previousConfig===null)localStorage.removeItem('koujiBackupPasswordConfig');else localStorage.setItem('koujiBackupPasswordConfig',previousConfig);if(localStorage.getItem('koujiBackupPasswordConfig')!==previousConfig)throw Error('変更前のパスワード情報を確認できません')}catch(configRestoreError){throw Error('初回パスワード登録に失敗し、変更前の設定への差し戻しも確認できませんでした。保存領域を確認してください。登録エラー：'+(configSaveError.message||configSaveError)+'／差し戻しエラー：'+(configRestoreError.message||configRestoreError))}throw Error('初回パスワード情報の保存に失敗したため、変更前の設定へ戻しました：'+(configSaveError.message||configSaveError))}}
-   $('lockError').textContent='保存データの暗号化キーを作成しています…';data=normalizeData(legacy?JSON.parse(legacy):null);storageKey=await deriveAesKey(pw,unb64(activeCfg.salt),activeCfg.iterations);
-   if(pw.length<8){
-    alert('現在のパスワードは8文字未満です。安全のため、新しい8文字以上のパスワードへ変更してください。');
-    const next=prompt('新しいパスワードを入力してください（8文字以上）。キャンセルするとアプリは開きません。');
-    if(next===null)throw Error('パスワード変更をキャンセルしました。');
-    if(next.length<8)throw Error('新しいパスワードは8文字以上にしてください。');
-    const again=prompt('確認のため、新しいパスワードをもう一度入力してください。');
-    if(again===null)throw Error('パスワード変更をキャンセルしました。');
-    if(next!==again)throw Error('新しいパスワードが一致しません。もう一度ロック解除してください。');
-    const salt=randomBytes(16),iv=randomBytes(12),newKey=await deriveAesKey(next,salt,BACKUP_ITERATIONS);
-    const verifier=await passwordVerifier(next,salt,BACKUP_ITERATIONS);
-    const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv},newKey,new TextEncoder().encode(JSON.stringify(data)));
-    commitPasswordMigration({salt:b64(salt),verifier,iterations:BACKUP_ITERATIONS},{format:'KOUJI-LOCAL-1',cipher:'AES-256-GCM',salt:b64(salt),iv:b64(iv),ciphertext:b64(cipher)});
-    storageKey=newKey;
-    alert('パスワードを8文字以上に変更し、保存データを再暗号化しました。次回から新しいパスワードを使ってください。');
-   }else {$('lockError').textContent='暗号化データを保存しています…';await persist();}
-  }
-  $('lockError').textContent='ログイン状態を保存しています…';await saveUnlockSessionKey(storageKey);
-  $('lockScreen').style.display='none';document.body.classList.remove('app-locked');$('lockPassword').value=$('lockPasswordConfirm').value='';
-  updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();activateInactivityLock();
- }catch(err){const message=err.message||'ロックを解除できませんでした';$('lockError').textContent=message;if(message==='パスワードが違います。'){alert('パスワードが違います。入力内容を確認して、もう一度入力してください。');$('lockPassword').value='';$('lockPassword').focus();}btn.disabled=false;btn.textContent=encrypted?'ロックを解除':'暗号化して開始';}};
+$('restoreFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const raw=JSON.parse(await file.text());let incoming;if(raw&&raw.app==='工事かんたん請求'&&raw.version===1&&raw.data)incoming=raw.data;else if(raw&&Array.isArray(raw.items)&&Array.isArray(raw.jobs)&&raw.settings)incoming=raw;else throw Error('このバックアップ形式には対応していません。JSONバックアップを選択してください。');if(!Array.isArray(incoming.items)||!Array.isArray(incoming.jobs)||!incoming.settings||typeof incoming.settings!=='object'||Array.isArray(incoming.settings)||(incoming.corporations!==undefined&&!Array.isArray(incoming.corporations)))throw Error('バックアップ内容が正しくありません');if(!confirm('現在のデータを上書きして復元します。先に現在のデータのバックアップをダウンロードします。続行しますか？'))return;downloadBlob(makePlainBackup(),'工事かんたん請求_復元前バックアップ_'+todayLocalDate()+'.json');if(!confirm('復元前バックアップが保存されたことを確認できましたか？確認できた場合のみOKを押してください。'))return;const previous=JSON.stringify(data);data=normalizeData(incoming);try{await persist();if(localStorage.getItem('koujiAppData')!==JSON.stringify(data))throw Error('復元後の照合に失敗しました')}catch(err){data=JSON.parse(previous);await persist();throw err}loadSettings();renderCatalog();renderCart();renderManage();renderHistory();renderCorporations();alert('バックアップを復元しました')}catch(err){alert('復元できませんでした：'+err.message)}finally{e.target.value=''}};
+$('backupPasswordStatus').textContent='パスワードなしのJSON形式です。個人情報・工事情報が含まれるため安全に保管してください。';
+async function finishStartup(){loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory()}
+async function startPasswordlessApp(){
+ const encrypted=localStorage.getItem('koujiAppDataEncrypted');
  if(encrypted){
-  const remembered=await restoreUnlockSession();
-  if(remembered){
-   data=remembered.data;storageKey=remembered.key;await persist();
-   $('lockScreen').style.display='none';document.body.classList.remove('app-locked');
-   updatePasswordStatus();loadSettings();renderCatalog();renderCart();renderCorporations();renderManage();renderHistory();
-   activateInactivityLock(remembered.lastActivity);
-   return;
-  }
+  $('migrationScreen').style.display='flex';
+  $('migrationButton').onclick=async()=>{const button=$('migrationButton');button.disabled=true;button.textContent='移行中…';$('migrationError').textContent='';try{
+   if(!crypto?.subtle)throw Error('データ移行機能を利用できません。HTTPSで開いてください。');
+   const cfg=JSON.parse(localStorage.getItem('koujiBackupPasswordConfig')||'null');if(!cfg||!cfg.salt||!cfg.verifier||!Number.isInteger(cfg.iterations)||cfg.iterations<100000||cfg.iterations>2000000)throw Error('既存のパスワード情報を確認できません。データは削除していません。');
+   const password=$('migrationPassword').value,saltCfg=unb64(cfg.salt);if(!constantTimeEqual(await passwordVerifier(password,saltCfg,cfg.iterations),cfg.verifier))throw Error('パスワードが違います。');
+   const enc=JSON.parse(encrypted);if(enc.cipher!=='AES-256-GCM'||typeof enc.iv!=='string'||typeof enc.ciphertext!=='string')throw Error('暗号化データの形式が正しくありません。元データは保持しています。');
+   const key=await deriveAesKey(password,unb64(enc.salt||cfg.salt),cfg.iterations),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(enc.iv)},key,unb64(enc.ciphertext));
+   const migrated=normalizeData(JSON.parse(new TextDecoder().decode(plain))),snapshot=JSON.stringify(migrated);localStorage.setItem('koujiAppData',snapshot);if(localStorage.getItem('koujiAppData')!==snapshot)throw Error('移行後データの確認に失敗しました。旧暗号化データは残しています。');
+   data=migrated;localStorage.removeItem('koujiAppDataEncrypted');localStorage.removeItem('koujiBackupPasswordConfig');if(localStorage.getItem('koujiAppDataEncrypted')!==null||localStorage.getItem('koujiBackupPasswordConfig')!==null)throw Error('旧暗号化情報の削除確認ができません。移行済みデータは保持しています。');
+   $('migrationScreen').style.display='none';$('migrationPassword').value='';await finishStartup();alert('データ移行が完了しました。次回からパスワード入力と30分後の自動ロックはありません。');
+  }catch(err){$('migrationError').textContent=err.message||'データ移行に失敗しました'}finally{button.disabled=false;button.textContent='データを移行して開く'}};
+  return;
  }
-
+ const legacy=localStorage.getItem('koujiAppData');if(legacy)data=normalizeData(JSON.parse(legacy));await finishStartup();
 }
-startProtectedApp().catch(err=>{const el=document.getElementById('lockError');if(el)el.textContent='アプリ初期化エラー：'+(err?.message||String(err))});
+startPasswordlessApp().catch(err=>{alert('アプリを起動できませんでした：'+(err.message||err));console.error(err)});
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(err => console.warn('Service Worker registration failed', err)));
 }
