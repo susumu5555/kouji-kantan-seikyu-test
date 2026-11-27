@@ -114,7 +114,7 @@ const prefectures=['北海道','青森県','岩手県','宮城県','秋田県','
 prefectures.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;$('pPref').appendChild(o)});
 $('pZipSearch').onclick=()=>{
  const zip=$('pZip').value.replace(/[^0-9]/g,'');
- if(!/^\\d{7}$/.test(zip)){$('pZipStatus').textContent='郵便番号は7桁で入力してください。';return}
+ if(!/^\d{7}$/.test(zip)){$('pZipStatus').textContent='郵便番号は7桁で入力してください。';return}
  const button=$('pZipSearch');button.disabled=true;$('pZipStatus').textContent='住所を検索しています…';
  const cb='genbaZip_'+Date.now()+'_'+Math.floor(Math.random()*100000),script=document.createElement('script');let done=false;
  const timer=setTimeout(()=>finish(null,'検索がタイムアウトしました。時間をおいて再試行してください。'),15000);
