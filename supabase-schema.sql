@@ -32,27 +32,16 @@ using (exists (
   select 1 from public.team_members m where m.user_id = auth.uid()
 ));
 
+-- 共有データの書き込みは revision 検証付きRPCだけに限定する。
 drop policy if exists "team members can insert shared documents" on public.shared_documents;
-create policy "team members can insert shared documents"
-on public.shared_documents for insert to authenticated
-with check (exists (
-  select 1 from public.team_members m where m.user_id = auth.uid()
-) and updated_by = auth.uid());
-
 drop policy if exists "team members can update shared documents" on public.shared_documents;
-create policy "team members can update shared documents"
-on public.shared_documents for update to authenticated
-using (exists (
-  select 1 from public.team_members m where m.user_id = auth.uid()
-))
-with check (exists (
-  select 1 from public.team_members m where m.user_id = auth.uid()
-) and updated_by = auth.uid());
-
+revoke all on public.team_members from anon, authenticated;
 grant select on public.team_members to authenticated;
-grant select, insert, update on public.shared_documents to authenticated;
+revoke all on public.shared_documents from anon, authenticated;
+grant select on public.shared_documents to authenticated;
 
 -- revision を比較してから保存。別端末が先に更新した場合は上書きせず競合として返す。
+-- SECURITY DEFINER はテーブルへの直接書き込み権限を利用者に与えずにRPC内で検証・保存するため。
 create or replace function public.save_shared_document(
   p_document_key text,
   p_payload jsonb,
@@ -60,33 +49,41 @@ create or replace function public.save_shared_document(
 )
 returns table(document_key text, revision bigint, updated_at timestamptz)
 language plpgsql
-security invoker
-set search_path = public
+security definer
+set search_path = public, auth
 as $$
 declare
   saved public.shared_documents%rowtype;
+  caller_id uuid := auth.uid();
 begin
-  if not exists (select 1 from public.team_members where user_id = auth.uid()) then
+  if caller_id is null or not exists (
+    select 1 from public.team_members where user_id = caller_id
+  ) then
     raise exception 'not_a_team_member';
   end if;
   if p_document_key not in ('field_data','invoice_data') then
     raise exception 'invalid_document_key';
   end if;
+  if p_payload is null then
+    raise exception 'payload_required';
+  end if;
 
   if p_expected_revision = 0 then
     insert into public.shared_documents(document_key, payload, revision, updated_at, updated_by)
-    values (p_document_key, p_payload, 1, now(), auth.uid())
+    values (p_document_key, p_payload, 1, now(), caller_id)
     on conflict (document_key) do nothing
     returning * into saved;
-  else
+  elsif p_expected_revision > 0 then
     update public.shared_documents
        set payload = p_payload,
            revision = revision + 1,
            updated_at = now(),
-           updated_by = auth.uid()
+           updated_by = caller_id
      where shared_documents.document_key = p_document_key
        and shared_documents.revision = p_expected_revision
     returning * into saved;
+  else
+    raise exception 'invalid_expected_revision';
   end if;
 
   if saved.document_key is null then
@@ -97,7 +94,7 @@ begin
 end;
 $$;
 
-revoke all on function public.save_shared_document(text,jsonb,bigint) from public;
+revoke all on function public.save_shared_document(text,jsonb,bigint) from public, anon;
 grant execute on function public.save_shared_document(text,jsonb,bigint) to authenticated;
 
 -- 重要: team_members へのメンバー追加は管理者が Dashboard の SQL Editor から行う。
