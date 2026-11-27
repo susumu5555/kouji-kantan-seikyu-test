@@ -36,14 +36,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <body>
 <header><h1>現場管理アプリ</h1></header>
 <main>
-<section id="home" class="page">
-<div class="home-grid">
-<button class="home-action" data-page="register"><span>＋</span><b>新規登録</b></button>
-<button class="home-action" data-page="cases"><span>▤</span><b>案件・工事台帳</b></button>
-<button class="home-action" data-page="schedule"><span>▦</span><b>スケジュール</b></button>
-<a class="home-action" href="https://susumu5555.github.io/kouji-kantan-seikyu/" target="_blank" rel="noopener"><span>￥</span><b>見積書作成</b></a>
-</div>
-</section>
+
 
 <section id="register" class="page hidden"><div class="actions"><button class="secondary" onclick="location.href='./'">← ホームに戻る</button></div>
 
@@ -134,9 +127,11 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
 const initialPage=new URLSearchParams(location.search).get('page');
-if(['register','cases','schedule'].includes(initialPage)){document.getElementById('home').classList.add('hidden');document.getElementById(initialPage).classList.remove('hidden');}
+const pageToShow=initialPage==='completed'?'cases':initialPage;
+if(['register','cases','schedule','ledger'].includes(pageToShow)){document.getElementById(pageToShow).classList.remove('hidden');}
+else{location.replace('./');}
 
-document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
 $('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
 window.toggleCompleted=function(pid){const p=db.projects.find(x=>x.id===pid);if(!p)return;p.completed=!p.completed;p.completedAt=p.completed?new Date().toISOString():null;save();render()};
 let projectPage=1;
