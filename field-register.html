@@ -31,6 +31,25 @@ button.danger{background:#fff0ef;color:#a3342b;border:1px solid #f0cbc7;border-r
 .small{font-size:12px;color:var(--muted)}
 .hidden{display:none!important}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.calendar-head strong{font-size:18px}
+.calendar-head button{min-width:42px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calendar-weekday{text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:7px 0}
+.calendar-day{position:relative;min-height:66px;border:1px solid var(--line);border-radius:9px;background:#fff;padding:6px 2px 4px;text-align:center;color:#1c2930}
+.calendar-day .daynum{font-size:14px;font-weight:650}
+.calendar-day.today{border:2px solid var(--blue)}
+.calendar-day.selected{background:#e7f1f8;border:2px solid var(--navy)}
+.calendar-day.other{opacity:.35}
+.calendar-day .event-count{display:block;margin:3px auto 0;font-size:10px;color:var(--navy);font-weight:700;white-space:nowrap}
+.calendar-day.has-events:after{content:"";display:block;width:5px;height:5px;border-radius:50%;background:#2675ad;margin:2px auto 0}
+.calendar-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--muted)}
+.calendar-legend span{display:flex;align-items:center;gap:5px}
+.calendar-legend i{width:8px;height:8px;border-radius:50%;background:#2675ad;display:inline-block}
+.day-heading{font-size:16px;font-weight:750;margin:0 0 8px}
+.event-type{font-size:11px;border-radius:20px;background:#eaf1f5;color:#245b78;padding:4px 8px;white-space:nowrap}
+@media(max-width:420px){.calendar-day{min-height:56px}.calendar-day .event-count{font-size:9px}.calendar-grid{gap:3px}}
+
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
@@ -86,16 +105,29 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 </section>
 
 <section id="schedule" class="page hidden"><div class="actions"><button class="secondary" onclick="location.href='./'">← ホームに戻る</button></div>
-
 <div class="panel">
-<h2>スケジュール</h2>
+<h2>工事日カレンダー</h2>
+<div class="calendar-head">
+<button class="secondary" id="prevMonth" type="button" aria-label="前の月">‹</button>
+<strong id="calendarMonth"></strong>
+<button class="secondary" id="nextMonth" type="button" aria-label="次の月">›</button>
+</div>
+<div class="calendar-grid" id="calendarGrid"></div>
+<div class="calendar-legend"><span><i></i>予定あり</span><span>青枠：今日</span><span>薄青：選択日</span></div>
+<div class="actions"><button class="secondary" id="calendarToday" type="button">今日に戻る</button></div>
+</div>
+<div class="panel">
+<h3 class="day-heading" id="selectedDateHeading">選択日の予定</h3>
+<div id="selectedDayEvents"></div>
+</div>
+<div class="panel">
+<h2>工事予定を登録</h2>
 <label>現場</label><select id="sProject"></select>
 <div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
 <label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
 <label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
 <div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
 </div>
-<div class="panel"><h2>予定一覧</h2><div class="row"><div><label>表示開始日</label><input id="scheduleFrom" type="date"></div><div><label>表示終了日</label><input id="scheduleTo" type="date"></div></div><div id="scheduleList"></div></div>
 </section>
 
 </main>
@@ -170,9 +202,41 @@ $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderPro
 function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
 $('saveDimension').onclick=()=>{if(!$('dProject').value||!$('dLabel').value.trim())return alert('現場と記録項目を入力してください');db.dimensions.push({id:id(),projectId:$('dProject').value,date:$('dDate').value,label:$('dLabel').value,value:$('dValue').value,unit:$('dUnit').value,memo:$('dMemo').value,createdAt:new Date().toISOString()});save();['dDate','dLabel','dValue','dMemo'].forEach(x=>$(x).value='');render()};
 function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
-$('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');render()};
-function renderSchedules(){let a=[...db.schedules].sort((x,y)=>(x.date+' '+x.time).localeCompare(y.date+' '+y.time));let f=$('scheduleFrom').value,t=$('scheduleTo').value;if(f)a=a.filter(x=>x.date>=f);if(t)a=a.filter(x=>x.date<=t);$('scheduleList').innerHTML=a.length?a.map(s=>`<div class="item"><div class="itemtop"><strong>${esc(s.date)} ${esc(s.time)}</strong><span class="pill">${esc(s.type)}</span></div><div class="sub">${esc(projectName(s.projectId))}<br>${esc(s.content)}</div></div>`).join(''):'<div class="empty">予定はありません。</div>'}
-$('scheduleFrom').onchange=renderSchedules;$('scheduleTo').onchange=renderSchedules;
+let calendarMonth=new Date();calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1);
+let selectedCalendarDate=new Date().toISOString().slice(0,10);
+const pad2=n=>String(n).padStart(2,'0');
+const dateKey=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+function renderCalendar(){
+ const year=calendarMonth.getFullYear(),month=calendarMonth.getMonth();
+ $('calendarMonth').textContent=year+'年'+(month+1)+'月';
+ const first=new Date(year,month,1),offset=(first.getDay()+6)%7;
+ const start=new Date(year,month,1-offset);
+ const weekdays=['月','火','水','木','金','土','日'];
+ let html=weekdays.map(x=>'<div class="calendar-weekday">'+x+'</div>').join('');
+ for(let i=0;i<42;i++){
+  const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),keyDate=dateKey(d);
+  const count=db.schedules.filter(x=>x.date===keyDate).length;
+  const classes=['calendar-day'];
+  if(d.getMonth()!==month)classes.push('other');
+  if(keyDate===dateKey(new Date()))classes.push('today');
+  if(keyDate===selectedCalendarDate)classes.push('selected');
+  if(count)classes.push('has-events');
+  html+='<button type="button" class="'+classes.join(' ')+'" data-calendar-date="'+keyDate+'"><span class="daynum">'+d.getDate()+'</span>'+(count?'<span class="event-count">'+count+'件</span>':'')+'</button>';
+ }
+ $('calendarGrid').innerHTML=html;
+ $('calendarGrid').querySelectorAll('[data-calendar-date]').forEach(b=>b.onclick=()=>{selectedCalendarDate=b.dataset.calendarDate;const d=new Date(selectedCalendarDate+'T00:00:00');if(d.getMonth()!==calendarMonth.getMonth()||d.getFullYear()!==calendarMonth.getFullYear())calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);renderCalendar();renderSelectedDay();});
+}
+function renderSelectedDay(){
+ const d=new Date(selectedCalendarDate+'T00:00:00');
+ $('selectedDateHeading').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）の予定';
+ const a=db.schedules.filter(x=>x.date===selectedCalendarDate).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
+ $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
+}
+$('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
+$('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
+$('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
+$('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});selectedCalendarDate=$('sDate').value;const d=new Date(selectedCalendarDate+'T00:00:00');calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');renderCalendar();renderSelectedDay()};
+function renderSchedules(){renderCalendar();renderSelectedDay()}
 function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=new URLSearchParams(location.search).get('page')==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
