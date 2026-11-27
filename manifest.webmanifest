@@ -1,6 +1,6 @@
 {
-  "name": "工事かんたん請求（テスト）",
-  "short_name": "工事請求テスト",
+  "name": "工事管理アプリ",
+  "short_name": "工事管理",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
