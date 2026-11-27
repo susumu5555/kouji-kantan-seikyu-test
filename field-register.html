@@ -65,7 +65,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <section id="cases" class="page hidden"><div class="actions"><button class="secondary" data-page="home">← ホームに戻る</button></div>
 
 <div class="panel">
-<h2>案件・工事台帳</h2>
+<h2 id="casesTitle">未完了現場</h2>
 <h3>登録済み現場</h3>
 <p class="small">登録日の新しい順に20件ずつ表示します。21～40件目以降は「次へ」で切り替えます。</p>
 <input id="projectSearch" placeholder="現場名・顧客名・住所で検索">
@@ -135,8 +135,12 @@ const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
+const initialPage=new URLSearchParams(location.search).get('page');
+if(['cases','schedule'].includes(initialPage)){document.getElementById('home').classList.add('hidden');document.getElementById(initialPage).classList.remove('hidden');}
+
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 $('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pCity').value,$('pTown').value,$('pStreet').value,$('pBuilding').value].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pCity','pTown','pStreet','pBuilding','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
+window.toggleCompleted=function(pid){const p=db.projects.find(x=>x.id===pid);if(!p)return;p.completed=!p.completed;p.completedAt=p.completed?new Date().toISOString():null;save();render()};
 let projectPage=1;
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
@@ -149,7 +153,9 @@ function renderProjects(){
  if(projectPage<1)projectPage=1;
  const from=(projectPage-1)*PROJECTS_PER_PAGE;
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
- $('projectList').innerHTML=pageItems.length?pageItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button></div></div>`).join(''):'<div class="empty">該当する現場はありません。</div>';
+ const showCompleted=new URLSearchParams(location.search).get('page')==='completed';
+ const visibleItems=pageItems.filter(p=>Boolean(p.completed)===showCompleted);
+ $('projectList').innerHTML=visibleItems.length?visibleItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
 }
@@ -174,7 +180,7 @@ function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimens
 $('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');render()};
 function renderSchedules(){let a=[...db.schedules].sort((x,y)=>(x.date+' '+x.time).localeCompare(y.date+' '+y.time));let f=$('scheduleFrom').value,t=$('scheduleTo').value;if(f)a=a.filter(x=>x.date>=f);if(t)a=a.filter(x=>x.date<=t);$('scheduleList').innerHTML=a.length?a.map(s=>`<div class="item"><div class="itemtop"><strong>${esc(s.date)} ${esc(s.time)}</strong><span class="pill">${esc(s.type)}</span></div><div class="sub">${esc(projectName(s.projectId))}<br>${esc(s.content)}</div></div>`).join(''):'<div class="empty">予定はありません。</div>'}
 $('scheduleFrom').onchange=renderSchedules;$('scheduleTo').onchange=renderSchedules;
-function render(){fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=new URLSearchParams(location.search).get('page')==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
