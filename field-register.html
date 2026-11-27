@@ -136,7 +136,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
 const initialPage=new URLSearchParams(location.search).get('page');
-if(['cases','schedule'].includes(initialPage)){document.getElementById('home').classList.add('hidden');document.getElementById(initialPage).classList.remove('hidden');}
+if(['register','cases','schedule'].includes(initialPage)){document.getElementById('home').classList.add('hidden');document.getElementById(initialPage).classList.remove('hidden');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 $('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pCity').value,$('pTown').value,$('pStreet').value,$('pBuilding').value].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pCity','pTown','pStreet','pBuilding','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
