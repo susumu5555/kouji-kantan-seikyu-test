@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#1457a6"><title>共有設定 | 工事管理アプリ</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f8;color:#1d2939;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}header{background:#1457a6;color:white;padding:18px}header a{color:white;text-decoration:none}main{max-width:760px;margin:22px auto;padding:0 14px}.card{background:white;border:1px solid #dce3eb;border-radius:14px;padding:18px;margin:14px 0}h1{font-size:21px;margin:0 0 8px}h2{font-size:18px;margin:0 0 12px}p{line-height:1.65}.muted{color:#64748b;font-size:13px}label{display:block;font-weight:650;margin:12px 0 5px}input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}button{border:0;border-radius:9px;padding:12px 16px;background:#1457a6;color:white;font:inherit;font-weight:700;margin:8px 6px 0 0}button.secondary{background:#e8eef5;color:#1e3a5f}button:disabled{opacity:.5}.status{padding:12px;background:#eef4fb;border-radius:9px;white-space:pre-wrap}.warn{background:#fff7e8;padding:12px;border-radius:9px;color:#794b00}.hidden{display:none}.row{display:flex;gap:8px;flex-wrap:wrap}
+</style></head><body>
+<header><a href="./">← ホームに戻る</a><h1>5人共有・クラウド設定</h1></header>
+<main>
+<div class="card"><h2>1. Supabase接続設定</h2><p class="muted">SupabaseのProject URLとPublishable key（旧anon key）を入力します。secret / service_role keyは入力しないでください。この設定は現在のブラウザーに保存されます。</p>
+<label for="url">Project URL</label><input id="url" placeholder="https://xxxxxxxx.supabase.co" autocomplete="url">
+<label for="key">Publishable key</label><input id="key" placeholder="sb_publishable_..." autocomplete="off">
+<div class="row"><button id="saveConfig">接続設定を保存</button><button class="secondary" id="clearConfig">この端末の設定を消去</button></div><p id="configStatus" class="status">未設定</p></div>
+<div class="card"><h2>2. チームアカウントでログイン</h2><p class="muted">Supabase Authenticationで作成したチームメンバーのメールアドレスとパスワードを使用します。</p>
+<label for="email">メールアドレス</label><input id="email" type="email" autocomplete="username">
+<label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password">
+<div class="row"><button id="login">ログイン</button><button class="secondary" id="logout">ログアウト</button></div><p id="authStatus" class="status">未ログイン</p></div>
+<div class="card"><h2>3. 既存データの初回移行</h2><div class="warn">重要：先に現場データ・見積請求データのバックアップをそれぞれ保存してください。ここではクラウドに同じキーのデータが既にある場合、絶対に上書きしません。移行は空の保存領域に限ります。</div>
+<p>現在の端末に保存されているデータを確認し、Supabaseにまだデータがない場合だけ初回登録します。別端末のデータを自動で統合する機能ではありません。</p>
+<button id="inspect" class="secondary">移行前データとクラウドを確認</button><div id="preview" class="status">未確認</div>
+<div class="row"><button id="migrate" disabled>空のクラウド領域に初回登録</button></div><p id="migrationStatus" class="status">未実行</p></div>
+<div class="card"><h2>4. 現在の同期状態</h2><p>この設定ページは接続・ログイン・初回移行の準備用です。通常画面（現場登録・見積作成）へのリアルタイム同期は、アプリ本体への接続設定反映後に有効になります。</p><p class="muted">現時点で同期済みとは表示しません。既存端末のデータは移行完了・照合まで削除しないでください。</p></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const $=id=>document.getElementById(id), CONFIG_KEY='koujiSupabaseConfig_v1';
+let client=null, session=null, preview=null;
+function cfg(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'null')}catch(e){return null}}
+function setStatus(id,msg){$(id).textContent=msg}
+function connect(){const c=cfg();if(!c){client=null;setStatus('configStatus','未設定');return false}if(!window.supabase?.createClient){setStatus('configStatus','Supabaseライブラリを読み込めません。ネット接続を確認してください。');return false}client=window.supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});setStatus('configStatus','設定済み：'+c.url);return true}
+$('saveConfig').onclick=()=>{const url=$('url').value.trim(),key=$('key').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){alert('Project URLの形式を確認してください');return}if(!key||/service_role|secret/i.test(key)){alert('Publishable keyを入力してください。secret keyは使用できません');return}localStorage.setItem(CONFIG_KEY,JSON.stringify({url,key}));connect();setStatus('authStatus','接続設定を保存しました。ログインしてください。')};
+$('clearConfig').onclick=async()=>{if(!confirm('この端末に保存したSupabase接続設定を削除しますか？クラウドのデータは削除されません。'))return;if(client)await client.auth.signOut();localStorage.removeItem(CONFIG_KEY);client=null;session=null;setStatus('configStatus','未設定');setStatus('authStatus','未ログイン')};
+$('login').onclick=async()=>{if(!client&&!connect())return;const email=$('email').value.trim(),password=$('password').value;if(!email||!password){alert('メールアドレスとパスワードを入力してください');return}const {data,error}=await client.auth.signInWithPassword({email,password});if(error){setStatus('authStatus','ログイン失敗：'+error.message);return}session=data.session;setStatus('authStatus','ログイン中：'+data.user.email);};
+$('logout').onclick=async()=>{if(!client)return;const {error}=await client.auth.signOut();session=null;setStatus('authStatus',error?'ログアウト失敗：'+error.message:'ログアウトしました')};
+async function currentSession(){if(!client&&!connect())throw Error('接続設定がありません');const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;if(!session)throw Error('先にログインしてください');return session}
+async function cloudDoc(k){const {data,error}=await client.from('shared_documents').select('document_key,revision,updated_at,payload').eq('document_key',k).maybeSingle();if(error)throw error;return data}
+$('inspect').onclick=async()=>{try{await currentSession();const field=localStorage.getItem('genbaThreeModule_v1'),invoice=localStorage.getItem('koujiAppData');let fieldObj=null,invoiceObj=null;if(field)fieldObj=JSON.parse(field);if(invoice)invoiceObj=JSON.parse(invoice);const [fc,ic]=await Promise.all([cloudDoc('field_data'),cloudDoc('invoice_data')]);preview={field,invoice,fc,ic};const summary={local端末:{現場データ:field?{文字数:field.length,現場件数:fieldObj?.projects?.length??'形式確認要'}:'なし',見積請求データ:invoice?{文字数:invoice.length,工事項目件数:invoiceObj?.items?.length??'形式確認要',見積履歴件数:invoiceObj?.jobs?.length??'形式確認要'}:'なし'},クラウド:{現場データ:fc?{revision:fc.revision,更新日時:fc.updated_at}:'未登録',見積請求データ:ic?{revision:ic.revision,更新日時:ic.updated_at}:'未登録'}};setStatus('preview',JSON.stringify(summary,null,2));$('migrate').disabled=!!(fc||ic)||(!field&&!invoice);if(fc||ic)setStatus('migrationStatus','クラウドに既存データがあります。安全のため一括移行を停止しました。内容を比較してから個別対応が必要です。');else setStatus('migrationStatus','クラウド側は空です。確認後、存在する端末データのみ初回登録できます。')}catch(e){preview=null;$('migrate').disabled=true;setStatus('preview','確認できません：'+e.message)}};
+$('migrate').onclick=async()=>{if(!preview)return;const btn=$('migrate');btn.disabled=true;try{await currentSession();const results=[];for(const [k,raw] of [['field_data',preview.field],['invoice_data',preview.invoice]]){if(!raw)continue;const parsed=JSON.parse(raw);const {data,error}=await client.rpc('save_shared_document',{p_document_key:k,p_payload:parsed,p_expected_revision:0});if(error)throw Error(k+'の登録に失敗：'+error.message);results.push(k+' 登録済み revision '+(data?.[0]?.revision??'?'))}setStatus('migrationStatus','初回登録結果：\n'+results.join('\n')+'\n\n端末内データは削除していません。クラウド側の件数・内容を確認してください。')}catch(e){setStatus('migrationStatus','移行エラー：'+e.message+'\n端末内データは保持されています。')}finally{btn.disabled=false}};
+(function init(){const c=cfg();if(c){$('url').value=c.url;$('key').value=c.key;connect();if(client)client.auth.getSession().then(({data})=>{session=data.session;if(session)setStatus('authStatus','ログイン中：'+session.user.email)})}})();
+</script></body></html>
