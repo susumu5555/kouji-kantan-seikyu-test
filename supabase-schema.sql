@@ -1,4 +1,5 @@
 -- 工事管理アプリ 5人共有用 Supabase schema
+-- 現場データと見積・請求データは同一Supabaseプロジェクト・同一DBに保存し、document_keyで論理的に分離する。
 -- Supabase SQL Editor で一度だけ実行する。service_role key は絶対にブラウザーへ置かない。
 
 create table if not exists public.team_members (
