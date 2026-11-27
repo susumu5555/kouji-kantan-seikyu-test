@@ -50,7 +50,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 document.querySelectorAll('[data-feature]').forEach(button=>{
   button.addEventListener('click',()=>{
-    alert(button.dataset.feature+' は、機能統合後に利用できるようになります。');
+    if(button.dataset.feature==='現場登録'){location.href='./field-register.html';return;} alert(button.dataset.feature+' は、機能統合後に利用できるようになります。');
   });
 });
 </script>
