@@ -61,7 +61,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v193</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v194</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -106,7 +106,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 
 
 <div class="row"><div><label>記録日</label><input id="dDate" type="date"></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
-<div class="row"><div><label>寸法・数値</label><input id="dValue" placeholder="例：3.5"></div><div><label>単位</label><select id="dUnit"><option>m</option><option>mm</option><option>cm</option><option>台</option><option>個</option><option>その他</option></select></div></div>
+<input id="dValue" type="hidden" value=""><input id="dUnit" type="hidden" value="">
 <label>備考</label><textarea id="dMemo" placeholder="寸法の補足・施工上の注意"></textarea>
 <div class="actions"><button class="primary" id="saveDimension">寸法を保存</button></div>
 </div>
