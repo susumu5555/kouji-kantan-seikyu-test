@@ -342,7 +342,7 @@ window.toggleCompleted=function(pid){
     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
    }
    if(!stored)throw lastError||Error('クラウドの更新が続いています。再度お試しください');
-   projectListMode='completed';projectPage=1;history.replaceState(null,'',location.pathname+'?page=completed');modal.remove();render();
+   projectListMode='open';projectPage=1;history.replaceState(null,'',location.pathname+'?page=cases');modal.remove();render();
   }catch(e){button.disabled=false;alert('クラウドに工事完了を保存できなかったため、未完了のままにしています。\\n'+(e.message||e))}
  };
 };
