@@ -123,7 +123,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v203</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v204</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -718,7 +718,7 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
   const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
-  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">ID：${esc(p.managementNo||'番号未設定')}</span><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button><button class="danger" onclick="deleteProject('${p.id}')">現場を削除</button></div></div>`;
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">ID：${esc(p.managementNo||'番号未設定')}</span><span class="pill">工事日：${esc(p.workDate?p.workDate.replaceAll('-','/'):'未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button><button class="danger" onclick="deleteProject('${p.id}')">現場を削除</button></div></div>`;
  }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
