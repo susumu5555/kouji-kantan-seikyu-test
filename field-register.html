@@ -155,7 +155,9 @@ $('pZipSearch').onclick=()=>{
 };
 let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimensions":[],"schedules":[]}');
 if(!Array.isArray(db.pdfs))db.pdfs=[];
-const save=()=>localStorage.setItem(key,JSON.stringify(db));
+let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false;
+const save=()=>{const snapshot=JSON.stringify(db);localStorage.setItem(key,snapshot);if(!fieldCloudReady)return;fieldCloudQueue=fieldCloudQueue.then(async()=>{const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:JSON.parse(snapshot),p_expected_revision:fieldCloudRevision});if(error)throw error;const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');fieldCloudRevision=Number(row.revision);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));}).catch(err=>{console.error('Field cloud save failed',err);alert('端末には保存しましたが、現場データのクラウド同期に失敗しました。別端末にはまだ反映されていません。\\n'+(err.message||err))});return fieldCloudQueue};
+async function initializeFieldCloud(){if(!window.KoujiCloudReady)throw Error('共有ログイン機能を読み込めません。再読み込みしてください');const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');const {data:doc,error}=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();if(error)throw error;const raw=localStorage.getItem(key);if(raw&&!localStorage.getItem('koujiFieldData_preCloud_v1')){localStorage.setItem('koujiFieldData_preCloud_v1',raw);if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します')}if(doc){const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);if(localRevision>Number(doc.revision))throw Error('端末側の同期番号がクラウドより新しいため、自動上書きを停止しました');db=doc.payload;if(!db||typeof db!=='object'||!Array.isArray(db.projects)||!Array.isArray(db.visits)||!Array.isArray(db.dimensions)||!Array.isArray(db.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');if(!Array.isArray(db.pdfs))db.pdfs=[];localStorage.setItem(key,JSON.stringify(db));fieldCloudRevision=Number(doc.revision)}else{const {data:result,error:saveError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:db,p_expected_revision:0});if(saveError)throw saveError;const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('現場データの初回登録結果を確認できません');fieldCloudRevision=Number(row.revision)}localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;return fieldCloudRevision}
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
@@ -307,5 +309,5 @@ $('openCamera').onclick=()=>{
  $('pdfSaveStatus').textContent='写真PDFメーカーでPDFを作成すると、この現場へ自動保存します。';
 };
 
-render();
+(async()=>{try{const rev=await initializeFieldCloud();render();const n=document.createElement('div');n.className='panel';n.textContent='クラウド同期接続済み（revision '+rev+'）。写真PDF本体は現在この端末内に保存され、他端末への共有は未対応です。';document.querySelector('main').prepend(n)}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
 </script></body></html>
