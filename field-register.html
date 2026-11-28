@@ -72,8 +72,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
-<label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div>
-<div class="row"><div><label for="pStartTime">開始時刻</label><input id="pStartTime" type="time"></div><div><label for="pScheduleContent">予定内容</label><input id="pScheduleContent" placeholder="例：エアコン取付・現地調査など"></div></div>
+<div class="row"><div><label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div></div><div><label for="pStartTime">開始時刻</label><input id="pStartTime" type="time"></div></div>
+<label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="3" placeholder="作業内容・持参品・訪問時の注意事項など"></textarea>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
 </div>
 </section>
