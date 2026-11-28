@@ -20,16 +20,15 @@
   `;
   const style=document.createElement('style');style.textContent=css;document.head.appendChild(style);
   const gate=document.createElement('div');gate.id='kouji-auth-gate';
-  gate.innerHTML=`<div class="box"><h2>工事管理アプリ・ログイン</h2><p>身内5人で同じチームアカウントを共用できます。全員が同じメールアドレスとパスワードでログインしてください。パソコンとスマートフォンでも同じアカウントを使用できます。</p><div id="kouji-auth-config" class="status">接続設定を確認しています…</div><label for="kouji-auth-email">メールアドレス</label><input id="kouji-auth-email" type="email" autocomplete="username"><label for="kouji-auth-password">パスワード</label><input id="kouji-auth-password" type="password" autocomplete="current-password"><button id="kouji-auth-login">ログイン</button><button id="kouji-auth-logout" class="secondary" type="button">ログアウト</button><p class="small">接続先はアプリに設定済みです。5人全員が同じチームアカウントを使用してください。</p><div id="kouji-auth-status" class="status">認証を確認しています…</div></div>`;
+  gate.innerHTML=`<div class="box"><h2>工事管理アプリ・ログイン</h2><p>登録済みのチームアカウントでログインしてください。パソコンとスマートフォンで同じアカウントを使用できます。</p><div id="kouji-auth-config" class="status">接続設定を確認しています…</div><label for="kouji-auth-email">メールアドレス</label><input id="kouji-auth-email" type="email" autocomplete="username"><label for="kouji-auth-password">パスワード</label><input id="kouji-auth-password" type="password" autocomplete="current-password"><button id="kouji-auth-login">ログイン</button><button id="kouji-auth-logout" class="secondary" type="button">ログアウト</button><p class="small">接続先はアプリに設定済みです。登録済みのチームアカウントでログインしてください。</p><div id="kouji-auth-status" class="status">認証を確認しています…</div></div>`;
   document.body.appendChild(gate);
   const $=id=>document.getElementById(id), status=(msg,error=false)=>{const el=$('kouji-auth-status');el.textContent=msg;el.classList.toggle('error',error)};
   let client=null, busy=false, resolveCloudReady;
   window.KoujiCloudReady=new Promise(resolve=>{resolveCloudReady=resolve});
   function show(){gate.style.display='flex'}
   function hide(){gate.style.display='none'}
-  // 接続先は共有設定画面で、このブラウザーに保存した値だけを使用する。
-  // 削除済み・旧Supabaseプロジェクトへの誤接続を防ぐため、古い固定値にはフォールバックしない。
-  function getConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');return saved&&saved.url&&saved.key?saved:null}catch(_){return null}}
+  const BUILTIN_CONFIG={url:'https://qprwvdizoforkcccpvzz.supabase.co',key:'sb_publishable_KzduNU1SPwvKWWzKT94yIg_4pQ-wzOh'};
+  function getConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');return saved&&saved.url&&saved.key?saved:BUILTIN_CONFIG}catch(_){return BUILTIN_CONFIG}}
   async function loadSdk(){
     if(window.supabase?.createClient)return;
     await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=resolve;s.onerror=()=>reject(new Error('Supabaseライブラリを読み込めません。通信を確認してください。'));document.head.appendChild(s)});
