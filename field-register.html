@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v189</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v190</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -601,11 +601,49 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
   const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
-  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">ID：${esc(p.managementNo||'番号未設定')}</span><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">ID：${esc(p.managementNo||'番号未設定')}</span><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button><button class="danger" onclick="deleteProject('${p.id}')">現場を削除</button></div></div>`;
  }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
 }
+window.deleteProject=async function(projectId){
+ const project=db.projects.find(p=>p.id===projectId);if(!project)return;
+ const related={visits:(db.visits||[]).filter(x=>x.projectId===projectId).length,dimensions:(db.dimensions||[]).filter(x=>x.projectId===projectId).length,schedules:(db.schedules||[]).filter(x=>x.projectId===projectId).length,pdfs:(db.pdfs||[]).filter(x=>x.projectId===projectId)};
+ const label='「'+(project.managementNo||'番号未設定')+' '+(project.name||'名称未設定')+'」';
+ if(!confirm(label+'を削除しますか？\\n\\nこの現場に登録された訪問履歴・寸法記録・工事予定・写真PDFも削除対象になります。\\n次の画面でもう一度確認します。'))return;
+ const details='訪問履歴 '+related.visits+'件／寸法記録 '+related.dimensions+'件／工事予定 '+related.schedules+'件／写真PDF '+related.pdfs+'件';
+ if(!confirm('【最終確認】\\n'+label+'を完全に削除します。\\n'+details+'\\n\\n削除後は元に戻せません。本当に削除しますか？'))return;
+ const button=[...document.querySelectorAll('#projectList button')].find(b=>b.getAttribute('onclick')=== "deleteProject('"+projectId+"')");
+ if(button){button.disabled=true;button.textContent='削除中…';}
+ try{
+  const pdfs=(db.pdfs||[]).filter(x=>x.projectId===projectId);
+  const paths=pdfs.map(x=>x.storagePath).filter(Boolean);
+  if(paths.length){
+   const cloud=window.KoujiCloud;
+   if(!cloud?.ready)throw Error('クラウド認証を確認できません。写真PDFを含む削除は実行していません。');
+   const {error}=await cloud.client.storage.from('field-pdfs').remove(paths);
+   if(error)throw error;
+  }
+  const before=cloneFieldData(db);
+  db.projects=db.projects.filter(x=>x.id!==projectId);
+  for(const keyName of ['visits','dimensions','schedules','pdfs'])db[keyName]=(db[keyName]||[]).filter(x=>x.projectId!==projectId);
+  try{
+   const d=await openPdfDb();
+   await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');const store=tx.objectStore('pdfs');pdfs.forEach(x=>store.delete(x.id));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});
+  }catch(e){console.error('Local PDF cleanup failed',e);}
+  await save();
+  await syncFieldCloud('現場削除の即時同期');
+  projectPage=1;render();
+  if(localStorage.getItem(FIELD_PENDING_KEY)==='1'){
+   alert('現場をこの端末から削除しました。クラウドへの同期は保留中です。通信状態を確認して、同期完了後に別端末でも削除されたことを確認してください。');
+  }else{
+   alert('現場と関連データを削除し、クラウドへの同期を完了しました。');
+  }
+ }catch(e){
+  if(button){button.disabled=false;button.textContent='現場を削除';}
+  alert('現場を削除できませんでした。データは変更していません。\\n'+(e.message||e));
+ }
+};
 window.changeProjectPage=function(delta){projectPage+=delta;renderProjects();window.scrollTo({top:0,behavior:'smooth'});};
 window.openLedger=function(projectId){
  $('dProject').value=projectId;
