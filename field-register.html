@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v177</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v178</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -228,7 +228,19 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
    const l=Array.isArray(local[keyName])?local[keyName]:[],r=Array.isArray(remote[keyName])?remote[keyName]:[];
    const lm=new Map(l.filter(x=>x?.id!=null).map(x=>[String(x.id),x])),rm=new Map(r.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
    let onlyLocal=0,onlyCloud=0,different=0;
-   for(const [id,item] of lm){if(!rm.has(id))onlyLocal++;else if(JSON.stringify(item)!==JSON.stringify(rm.get(id)))different++;}
+   for(const [id,item] of lm){
+    if(!rm.has(id))onlyLocal++;
+    else if(JSON.stringify(item)!==JSON.stringify(rm.get(id))){
+     different++;
+     if(keyName==='projects'){
+      const other=rm.get(id),label=item.name||item.projectName||item.customerName||item.clientName||'名称未設定';
+      const keys=[...new Set([...Object.keys(item),...Object.keys(other)])].filter(k=>JSON.stringify(item[k])!==JSON.stringify(other[k]));
+      const safe=v=>{if(v===undefined)return '（未設定）';if(v===null)return 'null';const t=typeof v==='object'?JSON.stringify(v):String(v);return t.length>100?t.slice(0,100)+'…':t;};
+      lines.push('【内容が異なる現場】'+label+'（ID '+id+'）');
+      for(const k of keys.slice(0,20))lines.push('  '+k+'：端末「'+safe(item[k])+'」／クラウド「'+safe(other[k])+'」');
+     }
+    }
+   }
    for(const id of rm.keys())if(!lm.has(id))onlyCloud++;
    if(onlyLocal||onlyCloud||different||l.length!==r.length||lm.size!==l.length||rm.size!==r.length)allSame=false;
    lines.push(keyName+'：端末 '+l.length+'件／クラウド '+r.length+'件','  端末のみ '+onlyLocal+'件、クラウドのみ '+onlyCloud+'件、同じIDで内容差 '+different+'件');
@@ -248,7 +260,7 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
   }
   out.textContent=lines.join('\n');
   const oldMerge=document.getElementById('mergeFieldDataButton');if(oldMerge)oldMerge.remove();
-  if(!allSame){const mergeButton=document.createElement('button');mergeButton.id='mergeFieldDataButton';mergeButton.type='button';mergeButton.className='primary';mergeButton.textContent='不足データを安全に統合';mergeButton.addEventListener('click',async()=>{mergeButton.disabled=true;mergeButton.textContent='統合中…';try{const ok=await mergeFieldDataSafely();if(ok){out.textContent+='\\n統合保存が完了しました。別端末で再読み込みしてください。';mergeButton.remove();}}catch(e){alert('統合を停止しました。データは変更していません。\\n'+(e.message||e));mergeButton.disabled=false;mergeButton.textContent='不足データを安全に統合';}});out.insertAdjacentElement('afterend',mergeButton);}
+  if(!allSame&&lines.every(line=>!line.startsWith('【内容が異なる現場】'))){const mergeButton=document.createElement('button');mergeButton.id='mergeFieldDataButton';mergeButton.type='button';mergeButton.className='primary';mergeButton.textContent='不足データを安全に統合';mergeButton.addEventListener('click',async()=>{mergeButton.disabled=true;mergeButton.textContent='統合中…';try{const ok=await mergeFieldDataSafely();if(ok){out.textContent+='\\n統合保存が完了しました。別端末で再読み込みしてください。';mergeButton.remove();}}catch(e){alert('統合を停止しました。データは変更していません。\\n'+(e.message||e));mergeButton.disabled=false;mergeButton.textContent='不足データを安全に統合';}});out.insertAdjacentElement('afterend',mergeButton);}
  }catch(err){out.textContent='比較できませんでした：'+(err.message||err);}
  finally{button.disabled=false;button.textContent='端末・クラウドの差分を確認';}
 });
