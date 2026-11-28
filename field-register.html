@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#173f59">
-<title>現場管理アプリ</title>
+<title>工事管理アプリ</title>
 <style>
 :root{--navy:#173f59;--blue:#245b78;--bg:#f3f5f7;--line:#dce2e6;--muted:#66747d;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1c2930;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
@@ -58,9 +58,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v160</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v161</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div></section>
+<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
 <section id="register" class="page hidden">
 
@@ -204,6 +204,14 @@ const FIELD_PENDING_KEY='koujiFieldPendingSync_v1';
 const FIELD_BASE_KEY='koujiFieldSyncBase_v1';
 let fieldSyncTimers=[],fieldSyncWindowStarted=false,fieldSyncInProgress=false;
 function updateFieldSyncState(status){fieldSyncDiagnostics.status=status;fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);renderFieldSyncDiagnostics();}
+document.getElementById('manualFieldSyncButton')?.addEventListener('click',async()=>{
+ const button=document.getElementById('manualFieldSyncButton');
+ if(button.disabled)return;
+ if(localStorage.getItem(FIELD_PENDING_KEY)!=='1'){updateFieldSyncState('未同期データはありません');return;}
+ button.disabled=true;button.textContent='同期中…';
+ try{await syncFieldCloud('手動同期');}
+ finally{button.disabled=false;button.textContent='今すぐクラウド同期';}
+});
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
  fieldSyncWindowStarted=true;
