@@ -24,7 +24,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </style>
 </head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v189</span></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v190</span></div></header>
 <main>
 <button class="new" type="button" data-feature="現場登録">＋ 現場登録</button>
 <section class="grid" aria-label="メニュー">
@@ -71,7 +71,7 @@ document.querySelectorAll('[data-feature]').forEach(button=>{
         const data=JSON.parse(raw);
         if(!data||!Array.isArray(data.projects)){alert('現場データを読み取れませんでした。');return;}
         const now=new Date(),stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('');
-        const backup={format:'kouji-field-backup',version:1,createdAt:now.toISOString(),appVersion:'v189',data};
+        const backup={format:'kouji-field-backup',version:1,createdAt:now.toISOString(),appVersion:'v190',data};
         const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
         const url=URL.createObjectURL(blob),a=document.createElement('a');
         a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();
