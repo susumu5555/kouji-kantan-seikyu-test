@@ -698,7 +698,7 @@ async function showFieldRecoveryIfNeeded(){
   }catch(e){recoverButton.disabled=false;alert('復元できませんでした。データは変更していません。\n'+(e.message||e));}
  };
 }
-function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+function render(){const params=new URLSearchParams(location.search);if(params.has('list'))projectListMode=params.get('list')==='completed'?'completed':'open';else if(params.get('page')==='completed')projectListMode='completed';const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
