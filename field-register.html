@@ -250,8 +250,40 @@ window.toggleCompleted=function(pid){
  const p=db.projects.find(x=>x.id===pid);if(!p)return;
  if(p.completed){
   if(!confirm('この現場を未完了に戻しますか？'))return;
-  p.completed=false;p.completedAt=null;p.completedDate=null;
-  save().then(()=>{projectListMode='open';history.replaceState(null,'',location.pathname+'?page=cases');render()}).catch(()=>{});
+  (async()=>{
+   try{
+    await fieldCloudQueue.catch(()=>{});
+    const cloud=await window.KoujiCloudReady;
+    if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+    let stored=false,lastError=null;
+    for(let attempt=0;attempt<10;attempt++){
+     const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+     if(latest.error)throw latest.error;
+     if(!latest.data)throw Error('クラウドの現場データが見つかりません');
+     const remote=latest.data.payload;
+     if(!remote||!Array.isArray(remote.projects))throw Error('クラウドの現場データ形式が不正です');
+     const payload={...remote};
+     const remoteProjects=remote.projects.map(item=>item&&item.id===pid?{...item,completed:false,completedAt:null,completedDate:null}:item);
+     if(!remoteProjects.some(item=>item&&item.id===pid))throw Error('対象現場がクラウドに見つかりません。別端末のデータを保護するため変更しませんでした');
+     payload.projects=remoteProjects;
+     const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:Number(latest.data.revision)});
+     if(!error){
+      const row=Array.isArray(result)?result[0]:result;
+      if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+      db=payload;fieldCloudRevision=Number(row.revision);
+      localStorage.setItem(key,JSON.stringify(db));
+      localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+      stored=true;break;
+     }
+     lastError=error;
+     if(!String(error.message||error).includes('revision_conflict'))throw error;
+     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
+    }
+    if(!stored)throw lastError||Error('クラウドの更新が続いています。再度お試しください');
+    projectListMode='open';projectPage=1;history.replaceState(null,'',location.pathname+'?page=cases');render();
+    alert('未完了に戻しました。');
+   }catch(e){alert('クラウドに保存できなかったため、完了状態は変更していません。\\n'+(e.message||e))}
+  })();
   return;
  }
  let modal=document.getElementById('completeProjectModal');
