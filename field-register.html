@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v183</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v184</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -86,13 +86,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 
 <section id="cases" class="page hidden">
 
-<div class="panel">
-<h2>現場データのバックアップ</h2>
-<p class="small">登録済み現場・訪問履歴・寸法記録・工事予定・写真PDFの管理情報をバックアップします。毎週1回、アプリを開いた際にダウンロードします。</p>
-<div class="actions"><button type="button" class="secondary" id="fieldBackupButton">バックアップ</button><button type="button" class="secondary" id="fieldRestoreButton">復元</button><input type="file" id="fieldRestoreFile" accept=".json,application/json" hidden></div>
-<div id="fieldBackupStatus" class="small" role="status" style="margin-top:8px"></div>
-</div>
-
+<input type="file" id="fieldRestoreFile" accept=".json,application/json" hidden>
 <div class="panel">
 <h2 id="casesTitle">未完了現場</h2>
 <h3>登録済み現場</h3>
@@ -803,8 +797,8 @@ window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KE
  render();
  runWeeklyFieldBackup();
  const backupAction=new URLSearchParams(location.search).get('backupAction');
- if(backupAction==='backup')setTimeout(()=>document.getElementById('fieldBackupButton')?.click(),250);
- if(backupAction==='restore')setTimeout(()=>document.getElementById('fieldRestoreButton')?.click(),250);
+ if(backupAction==='backup')setTimeout(()=>downloadFieldBackup(false),250);
+ if(backupAction==='restore')setTimeout(()=>document.getElementById('fieldRestoreFile')?.click(),250);
  /* 古い退避データは自動復元候補として表示しない。バックアップ自体は保持する。 */
  if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
  await processPhotoPdfReturn();
