@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v168</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v169</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -363,7 +363,7 @@ window.toggleCompleted=function(pid){
   try{
    Object.assign(project,{completed:true,completedDate:date,completedAt:new Date(y,m-1,d,12,0,0).toISOString()});
    await save();
-   projectListMode='completed';localStorage.setItem('koujiFieldProjectListMode_v1','completed');projectPage=1;history.replaceState(null,'',location.pathname+'?page=cases&list=completed');modal.remove();const title=document.getElementById('casesTitle');if(title)title.textContent='工事完了履歴';render();
+   projectListMode='open';localStorage.setItem('koujiFieldProjectListMode_v1','open');projectPage=1;history.replaceState(null,'',location.pathname+'?page=cases&list=open');modal.remove();render();
   }catch(error){
    db=before;localStorage.setItem(key,JSON.stringify(before));button.disabled=false;
    alert('端末に保存できなかったため、工事完了に変更できませんでした。\\n'+(error.message||error));
