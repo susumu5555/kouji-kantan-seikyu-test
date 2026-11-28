@@ -242,7 +242,38 @@ else{location.replace('./');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
 $('saveProject').onclick=()=>{let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');db.projects.push({id:id(),name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value,createdAt:new Date().toISOString()});save();projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')};
-window.toggleCompleted=function(pid){const p=db.projects.find(x=>x.id===pid);if(!p)return;p.completed=!p.completed;p.completedAt=p.completed?new Date().toISOString():null;save();render()};
+window.toggleCompleted=function(pid){
+ const p=db.projects.find(x=>x.id===pid);if(!p)return;
+ if(p.completed){
+  if(!confirm('この現場を未完了に戻しますか？'))return;
+  p.completed=false;p.completedAt=null;p.completedDate=null;
+  save().then(()=>render()).catch(()=>{});
+  return;
+ }
+ let modal=document.getElementById('completeProjectModal');
+ if(!modal){
+  modal=document.createElement('div');modal.id='completeProjectModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px';
+  modal.innerHTML='<div style="background:#fff;border-radius:14px;padding:20px;width:min(100%,420px);box-shadow:0 8px 32px rgba(0,0,0,.25)"><h3 style="margin:0 0 10px">工事完了日を入力</h3><p id="completeProjectName" class="small" style="margin:0 0 14px"></p><label for="completeProjectDate">工事完了日 *</label><input id="completeProjectDate" type="date" required style="width:100%;padding:12px;border:1px solid #cbd4d9;border-radius:10px;font:inherit;margin:6px 0 18px"><div class="actions" style="justify-content:flex-end"><button type="button" class="secondary" id="cancelCompleteProject">キャンセル</button><button type="button" class="primary" id="confirmCompleteProject">次へ</button></div></div>';
+  document.body.appendChild(modal);
+  document.getElementById('cancelCompleteProject').onclick=()=>modal.remove();
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});
+ }
+ const now=new Date(),today=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);
+ document.getElementById('completeProjectName').textContent='対象現場：'+p.name;
+ document.getElementById('completeProjectDate').value=today;
+ document.getElementById('confirmCompleteProject').onclick=async()=>{
+  const date=document.getElementById('completeProjectDate').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('工事完了日を入力してください。');return}
+  const [y,m,d]=date.split('-').map(Number);const check=new Date(y,m-1,d);
+  if(check.getFullYear()!==y||check.getMonth()!==m-1||check.getDate()!==d){alert('正しい日付を入力してください。');return}
+  const formatted=date.replaceAll('-','/');
+  if(!confirm('次の内容で工事完了にしますか？\\n\\n現場：'+p.name+'\\n工事完了日：'+formatted+'\\n\\n確認後、この現場は「工事完了履歴」に移動します。'))return;
+  const button=document.getElementById('confirmCompleteProject');button.disabled=true;
+  p.completed=true;p.completedDate=date;p.completedAt=new Date(y,m-1,d,12,0,0).toISOString();
+  try{await save();modal.remove();render()}catch(e){p.completed=false;p.completedAt=null;p.completedDate=null;button.disabled=false;alert('クラウドへの保存を確認できなかったため、完了処理を取り消しました。再度お試しください。')}
+ };
+};
 let projectPage=1;
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
