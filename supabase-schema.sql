@@ -76,7 +76,7 @@ begin
   elsif p_expected_revision > 0 then
     update public.shared_documents
        set payload = p_payload,
-           revision = revision + 1,
+           revision = shared_documents.revision + 1,
            updated_at = now(),
            updated_by = caller_id
      where shared_documents.document_key = p_document_key
