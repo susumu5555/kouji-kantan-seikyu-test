@@ -348,7 +348,7 @@ async function processPhotoPdfReturn(){
   if(!(db.pdfs||[]).some(x=>x.id===record.id)){
    const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
    const storagePath=cloud.user.id+'/'+record.projectId+'/'+record.id+'.pdf';
-   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:false});
+   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
    if(uploadError)throw new Error('クラウドPDF保存に失敗しました：'+uploadError.message);
    db.pdfs.push({id:record.id,projectId:record.projectId,fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
    await save();
