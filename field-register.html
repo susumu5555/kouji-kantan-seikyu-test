@@ -62,9 +62,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v211</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v212</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div></section>
+<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="danger" id="resetAllTestDataButton">バックアップ後に全員分を初期化</button><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
 
 <section id="register" class="page hidden">
 
@@ -209,6 +209,41 @@ document.getElementById('manualFieldSyncButton')?.addEventListener('click',async
  button.disabled=true;button.textContent='同期中…';
  try{await syncFieldCloud('手動同期');}
  finally{button.disabled=false;button.textContent='今すぐクラウド同期';}
+});
+document.getElementById('resetAllTestDataButton')?.addEventListener('click',async()=>{
+ const button=document.getElementById('resetAllTestDataButton'),status=document.getElementById('resetAllTestDataStatus');
+ if(button.disabled)return;
+ if(!confirm('全員分のテストデータを初期化します。先にクラウドデータとPDFをバックアップします。実行しますか？'))return;
+ button.disabled=true;status.textContent='クラウドの現状を読み取り、バックアップしています…';
+ try{
+  const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('共有クラウドへログインしてください');
+  const {data:doc,error:readError}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
+  if(readError)throw readError;if(!doc?.payload)throw Error('クラウドの現場データが見つかりません。初期化を中止しました');
+  const original=doc.payload,stamp=new Date().toISOString().replace(/[:.]/g,'-'),backupKey='field_data_backup_'+stamp;
+  const {data:backup,error:backupError}=await cloud.client.rpc('save_shared_document',{p_document_key:backupKey,p_payload:{createdAt:new Date().toISOString(),sourceRevision:doc.revision,data:original},p_expected_revision:0});
+  if(backupError)throw backupError;if(!(Array.isArray(backup)?backup[0]:backup)?.revision)throw Error('クラウドJSONバックアップを確認できません');
+  const paths=[...new Set((original.pdfs||[]).map(x=>x.storagePath).filter(Boolean))],copied=[];
+  for(const path of paths){
+   const dest='reset-backups/'+stamp+'/'+path;
+   const {error}=await cloud.client.storage.from('field-pdfs').copy(path,dest);
+   if(error)throw Error('PDFバックアップに失敗：'+path+' / '+error.message);
+   copied.push({from:path,to:dest});
+  }
+  const token='reset-'+stamp+'-'+Math.random().toString(36).slice(2,9);
+  const empty={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[],resetToken:token,resetAt:new Date().toISOString(),backupKey,pdfBackups:copied};
+  const {data:reset,error:resetError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:empty,p_expected_revision:Number(doc.revision)});
+  if(resetError)throw resetError;const resetRow=Array.isArray(reset)?reset[0]:reset;if(!resetRow?.revision)throw Error('初期化後のクラウド保存結果を確認できません');
+  for(const path of paths){const {error}=await cloud.client.storage.from('field-pdfs').remove([path]);if(error)console.warn('Original PDF cleanup pending',path,error);}
+  localStorage.setItem('koujiFieldData_beforeReset_'+token,JSON.stringify(db));
+  db={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[]};localStorage.setItem(key,JSON.stringify(db));
+  localStorage.setItem('koujiFieldResetToken_v1',token);localStorage.setItem('koujiFieldCloudRevision_v1',String(resetRow.revision));
+  localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
+  fieldCloudRevision=Number(resetRow.revision);fieldCloudBaseData=cloneFieldData(db);fieldCloudReady=true;
+  try{const pdfDb=await openPdfDb();await new Promise((resolve,reject)=>{const tx=pdfDb.transaction('pdfs','readwrite');tx.objectStore('pdfs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch(e){console.warn('Local PDF cleanup failed',e);}
+  fieldSyncDiagnostics.status='全員分初期化済み。各端末は次回起動時に旧データを退避して初期化します';fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(resetRow.revision);fieldSyncDiagnostics.cloudRevision=Number(resetRow.revision);renderFieldSyncDiagnostics();render();
+  status.textContent='共有データを空にしました。JSONバックアップ：'+backupKey+'\nPDFバックアップ：'+copied.length+'件\nバックアップはクラウド内 reset-backups に保管しています。各端末はアプリを再読み込みすると旧データが自動退避・初期化されます。';
+ }catch(e){status.textContent='初期化を完了できませんでした：'+(e.message||e)+'\nバックアップ作成前または途中で停止した可能性があります。元データは削除しない方針です。';}
+ finally{button.disabled=false;}
 });
 document.getElementById('compareFieldDataButton')?.addEventListener('click',async()=>{
  const button=document.getElementById('compareFieldDataButton'),out=document.getElementById('fieldCompareResult');
@@ -428,7 +463,7 @@ async function initializeFieldCloud(){
   localStorage.setItem('koujiFieldData_preCloud_v1',raw);
   if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します');
  }
- const localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
+ let localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
  const hasPendingLocal=localStorage.getItem(FIELD_PENDING_KEY)==='1';const savedSyncBase=localStorage.getItem(FIELD_BASE_KEY);
  fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.localCounts=fieldDataCounts(localData);
  if(!localData||typeof localData!=='object'||!Array.isArray(localData.projects)||!Array.isArray(localData.visits)||!Array.isArray(localData.dimensions)||!Array.isArray(localData.schedules))throw Error('端末側データの形式が不正です。データは変更せず停止しました');
@@ -445,6 +480,13 @@ async function initializeFieldCloud(){
   let cloudData=docResult.data.payload;
   if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
   if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
+  if(cloudData.resetToken&&localStorage.getItem('koujiFieldResetToken_v1')!==cloudData.resetToken){
+   const oldLocal=localStorage.getItem(key);if(oldLocal)localStorage.setItem('koujiFieldData_beforeReset_'+cloudData.resetToken,oldLocal);
+   localData={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[]};db=cloneFieldData(localData);
+   localStorage.setItem(key,JSON.stringify(localData));localStorage.setItem('koujiFieldResetToken_v1',cloudData.resetToken);
+   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
+   try{const pdfDb=await openPdfDb();await new Promise((resolve,reject)=>{const tx=pdfDb.transaction('pdfs','readwrite');tx.objectStore('pdfs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch(e){console.warn('Local PDF cleanup after shared reset failed',e);}
+  }
   const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);fieldSyncDiagnostics.cloudProjectRows=(cloudData.projects||[]).map(p=>({name:p.name||'（名称なし）',completed:p.completed,completedDate:p.completedDate||p.completedAt||''}));
   if(localRevision>Number(docResult.data.revision)&&!hasPendingLocal){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
