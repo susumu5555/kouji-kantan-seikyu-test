@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v221</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v222</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="downloadFullBackupButton">全データを端末にバックアップ</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px">今回のみバックアップ確認を省略して全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><label style="display:block;margin-top:8px"><input type="checkbox" id="backupSavedConfirm" disabled> バックアップファイルを端末に保存したことを確認しました</label><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
 
@@ -262,7 +262,11 @@ document.getElementById('resetAllTestDataButton')?.addEventListener('click',asyn
    if(!result.error){reset=result;break;}
    lastError=result.error;
    if(!/revision_conflict/i.test(String(result.error.code||'')+' '+String(result.error.message||'')))throw result.error;
-   status.textContent='最新revisionを再取得して再試行しています（'+(attempt+1)+'/3）…';
+   const observed=await cloud.client.from('shared_documents').select('revision').eq('document_key','field_data').maybeSingle();
+   if(observed.error)throw observed.error;
+   const expected=Number(doc.revision),actual=Number(observed.data?.revision);
+   status.textContent='revision_conflict診断：保存時の期待値 '+expected+'／失敗直後の実値 '+actual+'（試行 '+(attempt+1)+'/3）';
+   if(actual===expected)throw Error('revision_conflictですが、失敗直後もrevisionは'+expected+'のままです。Supabase側RPC関数の実装不一致またはDB側の制約を確認する必要があります。');
    await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));
   }
   if(!reset)throw lastError||Error('他端末の更新が続いているため初期化できませんでした');
