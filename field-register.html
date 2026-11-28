@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v164</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v165</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -411,7 +411,7 @@ window.toggleCompleted=function(pid){
     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,Math.min(attempt,4)),3000)));
    }
    if(!stored)throw lastError||Error('クラウド更新が続いています。時間をおいて再試行してください');
-   projectListMode='open';projectPage=1;history.replaceState(null,'',location.pathname+'?list=open');modal.remove();render();
+   projectListMode='completed';projectPage=1;history.replaceState(null,'',location.pathname+'?list=completed');modal.remove();render();
   }catch(e){button.disabled=false;alert('クラウドに工事完了を保存できなかったため、状態は変更していません。\n'+(e.message||e))}
  };
 };
