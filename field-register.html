@@ -3,10 +3,6 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#173f59">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preconnect" href="https://qprwvdizoforkcccpvzz.supabase.co" crossorigin>
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://qprwvdizoforkcccpvzz.supabase.co">
 <title>工事管理アプリ</title>
 <style>
 :root{--navy:#173f59;--blue:#245b78;--bg:#f3f5f7;--line:#dce2e6;--muted:#66747d;--white:#fff}
@@ -62,9 +58,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v223</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v180</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="downloadFullBackupButton">全データを端末にバックアップ</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px">今回のみバックアップ確認を省略して全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><label style="display:block;margin-top:8px"><input type="checkbox" id="backupSavedConfirm" disabled> バックアップファイルを端末に保存したことを確認しました</label><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
+<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
 <section id="register" class="page hidden">
 
@@ -76,9 +72,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
-<div class="row"><div><label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div></div><div><label for="pStartTime">開始時刻</label><input id="pStartTime" type="time"></div></div>
-<label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="3" placeholder="作業内容・持参品・訪問時の注意事項など"></textarea>
+<label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
+</div>
+<div class="panel">
+<h2>工事予定を登録</h2>
+<label>現場</label><select id="sProject"></select>
+<div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
+<label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
+<label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
+<div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
 </div>
 </section>
 
@@ -88,7 +91,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <h2 id="casesTitle">未完了現場</h2>
 <h3>登録済み現場</h3>
 <p class="small">登録日の新しい順に20件ずつ表示します。21～40件目以降は「次へ」で切り替えます。</p>
-<input id="projectSearch" placeholder="現場ID・現場名・顧客名・住所で検索">
+<input id="projectSearch" placeholder="現場名・顧客名・住所で検索">
 <div id="projectList"></div>
 <div id="projectPagination" class="actions" aria-label="現場一覧ページ切替"></div>
 </div>
@@ -105,12 +108,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div id="pdfSaveStatus" class="small" aria-live="polite"></div>
 
 
-<div class="row"><div><label>記録日</label><input id="dDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="dDateHelp"><div id="dDateHelp" class="small">年は西暦4桁で入力してください（例：2026/11/28）。</div></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
-<label>寸法・数値</label><input id="dValue" placeholder="例：3.5">
+<div class="row"><div><label>記録日</label><input id="dDate" type="date"></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
+<div class="row"><div><label>寸法・数値</label><input id="dValue" placeholder="例：3.5"></div><div><label>単位</label><select id="dUnit"><option>m</option><option>mm</option><option>cm</option><option>台</option><option>個</option><option>その他</option></select></div></div>
 <label>備考</label><textarea id="dMemo" placeholder="寸法の補足・施工上の注意"></textarea>
 <div class="actions"><button class="primary" id="saveDimension">寸法を保存</button></div>
 </div>
-
+<div class="panel"><h2>寸法記録一覧</h2><div id="dimensionList"></div></div>
 
 </section>
 
@@ -210,83 +213,6 @@ document.getElementById('manualFieldSyncButton')?.addEventListener('click',async
  try{await syncFieldCloud('手動同期');}
  finally{button.disabled=false;button.textContent='今すぐクラウド同期';}
 });
-document.getElementById('downloadFullBackupButton')?.addEventListener('click',async()=>{
- const button=document.getElementById('downloadFullBackupButton'),status=document.getElementById('backupPermissionTestStatus');
- const resetButton=document.getElementById('resetAllTestDataButton'),savedCheck=document.getElementById('backupSavedConfirm');
- if(button.disabled)return;button.disabled=true;resetButton.disabled=true;savedCheck.checked=false;savedCheck.disabled=true;
- status.textContent='クラウドデータとPDFを読み取り、1つのバックアップファイルを作成しています。削除・変更は行いません…';
- try{
-  const cloud=await window.KoujiCloudReady;if(!cloud?.ready||!cloud.user?.id)throw Error('共有クラウドへログインしてください');
-  const {data:doc,error}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
-  if(error)throw error;if(!doc?.payload)throw Error('共有データが見つかりません');
-  const pdfFiles=[];
-  for(const item of (doc.payload.pdfs||[])){
-   if(!item.storagePath)continue;
-   const {data:blob,error:downloadError}=await cloud.client.storage.from('field-pdfs').download(item.storagePath);
-   if(downloadError)throw Error('PDF読込失敗：'+item.storagePath+' / '+downloadError.message);
-   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(reader.error||new Error('PDF変換失敗'));reader.readAsDataURL(blob);});
-   pdfFiles.push({storagePath:item.storagePath,fileName:item.fileName||item.name||item.storagePath.split('/').pop(),contentType:blob.type||'application/pdf',base64});
-  }
-  const backup={format:'kouji-field-backup-v1',createdAt:new Date().toISOString(),sourceRevision:Number(doc.revision),data:doc.payload,pdfFiles};
-  const file=new Blob([JSON.stringify(backup)],{type:'application/json'});
-  const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='kouji-test-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
-  status.textContent='バックアップファイルを作成し、ダウンロードを開始しました。PDF '+pdfFiles.length+'件を含みます。ファイルが端末に保存されたことを確認してください。';
-  localStorage.setItem('koujiBackupSourceRevision_v1',String(doc.revision));
-  savedCheck.disabled=false;
- }catch(e){status.textContent='バックアップ作成失敗：'+(e.message||e)+'\\n共有データ・既存PDFは変更していません。';}
- finally{button.disabled=false;}
-});
-document.getElementById('backupSavedConfirm')?.addEventListener('change',e=>{
- document.getElementById('resetAllTestDataButton').disabled=!e.target.checked;
- if(e.target.checked&&localStorage.getItem('koujiBackupSourceRevision_v1'))localStorage.setItem('koujiBackupConfirmedAt_v1',new Date().toISOString());
- else{localStorage.removeItem('koujiBackupConfirmedAt_v1');localStorage.removeItem('koujiBackupSourceRevision_v1');}
-});
-document.getElementById('resetAllTestDataButton')?.addEventListener('click',async()=>{
- const button=document.getElementById('resetAllTestDataButton'),status=document.getElementById('resetAllTestDataStatus');
- if(button.disabled)return;
- if(!confirm('【今回のみバックアップ確認を省略】全員分の共有テストデータ（現場・訪問・寸法・予定・写真PDF）を初期化します。続行しますか？'))return;
- button.disabled=true;fieldCloudReady=false;fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;status.textContent='この端末の自動同期を一時停止し、実行中の保存処理が終わるのを待っています…';
- try{
-  const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('共有クラウドへログインしてください');
-  while(fieldSyncInProgress)await new Promise(resolve=>setTimeout(resolve,200));
-  await fieldCloudQueue.catch(()=>{});
-  let reset=null,paths=[],token='',lastError=null,revisionDiagnostics=[];
-  for(let attempt=0;attempt<3;attempt++){
-   const {data:doc,error:readError}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
-   if(readError)throw readError;if(!doc?.payload)throw Error('クラウドの現場データが見つかりません。初期化を中止しました');
-   paths=[...new Set((doc.payload.pdfs||[]).map(x=>x.storagePath).filter(Boolean))];
-   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
-   token='reset-'+stamp+'-'+Math.random().toString(36).slice(2,9);
-   const empty={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[],resetToken:token,resetAt:new Date().toISOString()};
-   const result=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:empty,p_expected_revision:Number(doc.revision)});
-   if(!result.error){reset=result;break;}
-   lastError=result.error;
-   if(!/revision_conflict/i.test(String(result.error.code||'')+' '+String(result.error.message||'')))throw result.error;
-   const observed=await cloud.client.from('shared_documents').select('revision').eq('document_key','field_data').maybeSingle();
-   if(observed.error)throw observed.error;
-   const expected=Number(doc.revision),actual=Number(observed.data?.revision);
-   revisionDiagnostics.push('試行'+(attempt+1)+'：保存直前revision='+expected+'、失敗直後revision='+actual);status.textContent='revision_conflict診断：'+revisionDiagnostics.join('／');
-   if(actual===expected)throw Error('revision_conflictですが、失敗直後もrevisionは'+expected+'のままです。Supabase側RPC関数の実装不一致またはDB側の制約を確認する必要があります。');
-   await new Promise(resolve=>setTimeout(resolve,300*(attempt+1)));
-  }
-  if(!reset)throw Error('revision_conflictで初期化できませんでした。'+revisionDiagnostics.join('／')+'。他端末の更新またはDB側のRPC設定を確認してください');
-  const resetRow=Array.isArray(reset.data)?reset.data[0]:reset.data;
-  if(!resetRow?.revision)throw Error('初期化後のクラウド保存結果を確認できません');
-  const {data:verify,error:verifyError}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
-  if(verifyError)throw verifyError;
-  if(!verify?.payload||verify.payload.resetToken!==token||['projects','visits','dimensions','schedules','pdfs'].some(k=>!Array.isArray(verify.payload[k])||verify.payload[k].length!==0))throw Error('クラウド初期化後の再確認に失敗しました。元データの削除は中止しました');
-  for(const path of paths){const {error}=await cloud.client.storage.from('field-pdfs').remove([path]);if(error)console.warn('Original PDF cleanup pending',path,error);}
-  localStorage.setItem('koujiFieldData_beforeReset_'+token,JSON.stringify(db));
-  db={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[]};localStorage.setItem(key,JSON.stringify(db));
-  localStorage.setItem('koujiFieldResetToken_v1',token);localStorage.setItem('koujiFieldCloudRevision_v1',String(resetRow.revision));
-  localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
-  fieldCloudRevision=Number(resetRow.revision);fieldCloudBaseData=cloneFieldData(db);fieldCloudReady=true;
-  try{const pdfDb=await openPdfDb();await new Promise((resolve,reject)=>{const tx=pdfDb.transaction('pdfs','readwrite');tx.objectStore('pdfs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch(e){console.warn('Local PDF cleanup failed',e);}
-  fieldSyncDiagnostics.status='全員分初期化済み。各端末は次回起動時に旧データを退避して初期化します';fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(resetRow.revision);fieldSyncDiagnostics.cloudRevision=Number(resetRow.revision);renderFieldSyncDiagnostics();render();
-  status.textContent='全員分の共有データを初期化しました。クラウド revision：'+resetRow.revision+'。写真PDF '+paths.length+'件の元ファイル削除を実行しました。各端末はアプリを再読み込みしてください。';
- }catch(e){status.textContent='初期化を完了できませんでした：'+(e.message||e)+'。元データは削除していません。';}
- finally{button.disabled=false;}
-});
 document.getElementById('compareFieldDataButton')?.addEventListener('click',async()=>{
  const button=document.getElementById('compareFieldDataButton'),out=document.getElementById('fieldCompareResult');
  if(button.disabled)return;
@@ -301,15 +227,14 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
   for(const keyName of ['projects','visits','dimensions','schedules','pdfs']){
    const l=Array.isArray(local[keyName])?local[keyName]:[],r=Array.isArray(remote[keyName])?remote[keyName]:[];
    const lm=new Map(l.filter(x=>x?.id!=null).map(x=>[String(x.id),x])),rm=new Map(r.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-   const stableJson=v=>v&&typeof v==='object'?(Array.isArray(v)?'['+v.map(stableJson).join(',')+']':'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableJson(v[k])).join(',')+'}'):JSON.stringify(v);
    let onlyLocal=0,onlyCloud=0,different=0;
    for(const [id,item] of lm){
     if(!rm.has(id))onlyLocal++;
-    else if(stableJson(item)!==stableJson(rm.get(id))){
+    else if(JSON.stringify(item)!==JSON.stringify(rm.get(id))){
      different++;
      if(keyName==='projects'){
       const other=rm.get(id),label=item.name||item.projectName||item.customerName||item.clientName||'名称未設定';
-      const keys=[...new Set([...Object.keys(item),...Object.keys(other)])].filter(k=>stableJson(item[k])!==stableJson(other[k]));
+      const keys=[...new Set([...Object.keys(item),...Object.keys(other)])].filter(k=>JSON.stringify(item[k])!==JSON.stringify(other[k]));
       const safe=v=>{if(v===undefined)return '（未設定）';if(v===null)return 'null';const t=typeof v==='object'?JSON.stringify(v):String(v);return t.length>100?t.slice(0,100)+'…':t;};
       lines.push('【内容が異なる現場】'+label+'（ID '+id+'）');
       for(const k of keys.slice(0,20))lines.push('  '+k+'：端末「'+safe(item[k])+'」／クラウド「'+safe(other[k])+'」');
@@ -320,14 +245,6 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
    if(onlyLocal||onlyCloud||different||l.length!==r.length||lm.size!==l.length||rm.size!==r.length)allSame=false;
    lines.push(keyName+'：端末 '+l.length+'件／クラウド '+r.length+'件','  端末のみ '+onlyLocal+'件、クラウドのみ '+onlyCloud+'件、同じIDで内容差 '+different+'件');
   }
-  const projectMapLocal=new Map((local.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-  const projectMapCloud=new Map((remote.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-  const projectStatus=p=>'completed='+String(p.completed)+' / 完了日='+(p.completedDate||p.completedAt||'なし');
-  const localOnlyProjects=[...projectMapLocal].filter(([id])=>!projectMapCloud.has(id)).map(([id,p])=>'端末のみ：'+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
-  const cloudOnlyProjects=[...projectMapCloud].filter(([id])=>!projectMapLocal.has(id)).map(([id,p])=>'クラウドのみ：'+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
-  const allCloudProjects=[...projectMapCloud].map(([id,p],n)=>(n+1)+'. '+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
-  const allLocalProjects=[...projectMapLocal].map(([id,p],n)=>(n+1)+'. '+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
-  lines.push('','【端末側の現場一覧】',...allLocalProjects,'','【クラウド側の現場一覧】',...allCloudProjects,'','【差分現場】',...(localOnlyProjects.length?localOnlyProjects:['端末のみの現場：なし']),...(cloudOnlyProjects.length?cloudOnlyProjects:['クラウドのみの現場：なし']));
   const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);
   if(allSame&&localRevision===Number(data.revision)&&localStorage.getItem(FIELD_PENDING_KEY)!=='1'){
    fieldCloudRevision=Number(data.revision);fieldCloudBaseData=cloneFieldData(remote);fieldCloudReady=true;
@@ -350,56 +267,28 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
 async function mergeFieldDataSafely(){
  const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
  const keys=['projects','visits','dimensions','schedules','pdfs'];
- const stableJson=v=>{
-  if(v===undefined)return '"[undefined]"';
-  if(v===null||typeof v!=='object')return JSON.stringify(v);
-  if(Array.isArray(v))return '['+v.map(stableJson).join(',')+']';
-  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableJson(v[k])).join(',')+'}';
- };
  const buildMerge=(local,remote)=>{
-  const merged={...remote},conflicts=[],projectIdMap=new Map();
-  const remoteProjects=new Map((remote.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-  const projectMap=new Map((remote.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-  for(const item of (local.projects||[])){
-   if(!item||item.id==null)throw Error('現場にIDがないため統合を停止しました');
-   const id0=String(item.id),old=projectMap.get(id0);
-   if(!old)projectMap.set(id0,item);
-   else if(stableJson(old)!==stableJson(item)){
-    const newId=id();
-    projectIdMap.set(id0,newId);
-    projectMap.set(newId,{...item,id:newId});
-    conflicts.push('同じIDの別現場を分離：'+(item.name||'名称未設定')+'（新ID '+newId+'）');
-   }
-  }
-  merged.projects=Array.from(projectMap.values());
-  for(const k of ['visits','dimensions','schedules']){
-   const remoteItems=Array.isArray(remote[k])?remote[k]:[],localItems=Array.isArray(local[k])?local[k]:[];
-   const map=new Map(remoteItems.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-   for(const item0 of localItems){
-    if(!item0||item0.id==null)throw Error(k+'にIDのないデータがあるため停止しました');
-    const item=projectIdMap.has(String(item0.projectId))?{...item0,projectId:projectIdMap.get(String(item0.projectId))}:item0;
-    const old=map.get(String(item.id));
-    if(!old)map.set(String(item.id),item);
-    else if(stableJson(old)!==stableJson(item)){
-     if(!projectIdMap.has(String(item0.projectId)))throw Error(k+'に同じIDで内容が異なるデータがあります。自動統合を停止しました：'+item.id);
-     const cloned={...item,id:id()};map.set(String(cloned.id),cloned);
-    }
+  const merged={...remote},conflicts=[];
+  for(const k of keys){
+   const a=Array.isArray(local[k])?local[k]:[],b=Array.isArray(remote[k])?remote[k]:[];
+   const map=new Map(b.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));
+   for(const item of a){
+    if(!item||item.id==null)throw Error(k+'にIDのないデータがあるため停止しました');
+    const id=String(item.id),old=map.get(id);
+    if(old&&JSON.stringify(old)!==JSON.stringify(item))conflicts.push(k+'/'+id);
+    else if(!old)map.set(id,item);
    }
    merged[k]=Array.from(map.values());
   }
-  const localPdfs=Array.isArray(local.pdfs)?local.pdfs:[],remotePdfs=Array.isArray(remote.pdfs)?remote.pdfs:[];
-  if(localPdfs.some(x=>projectIdMap.has(String(x?.projectId))))throw Error('別現場として分離する現場にPDFが紐づいています。PDF本体の保存先も確認する必要があるため、PDFを含む自動統合は停止しました。現場データは変更していません');
-  const pdfMap=new Map(remotePdfs.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
-  for(const item of localPdfs){if(!item||item.id==null)throw Error('PDFにIDがないため停止しました');const old=pdfMap.get(String(item.id));if(old&&stableJson(old)!==stableJson(item))throw Error('同じPDF IDで内容が異なるため停止しました：'+item.id);if(!old)pdfMap.set(String(item.id),item);}
-  merged.pdfs=Array.from(pdfMap.values());
-  return {merged,conflicts,projectIdMap};
+  return {merged,conflicts};
  };
  let latest=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
  if(latest.error)throw latest.error;if(!latest.data?.payload)throw Error('最新クラウドデータを取得できません');
- const local=cloneFieldData(db);let built=buildMerge(local,latest.data.payload);
+ const local=cloneFieldData(db);
+ let built=buildMerge(local,latest.data.payload);
+ if(built.conflicts.length)throw Error('同じIDで内容が異なるデータがあります。自動統合を停止しました：'+built.conflicts.slice(0,5).join('、'));
  const summary=()=>keys.map(k=>k+'：端末 '+(local[k]||[]).length+'件／クラウド '+(latest.data.payload[k]||[]).length+'件 → 統合 '+built.merged[k].length+'件').join('\n');
- const extra=built.conflicts.length?'\n\n同じIDで内容が異なる現場は、別の新IDを付けて両方残します。関連する訪問履歴・寸法・予定も新しい現場IDに付け替えます。':'';
- if(!confirm('端末とクラウドの不足データを統合します。\n'+summary()+extra+'\n既存データは削除しません。続けますか？'))return false;
+ if(!confirm('端末とクラウドの不足データを統合します。\n'+summary()+'\n既存データは削除しません。続けますか？'))return false;
  let saved=null;
  for(let attempt=0;attempt<3;attempt++){
   saved=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:built.merged,p_expected_revision:Number(latest.data.revision)});
@@ -409,6 +298,7 @@ async function mergeFieldDataSafely(){
   latest=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
   if(latest.error)throw latest.error;if(!latest.data?.payload)throw Error('競合後の最新クラウドデータを取得できません');
   built=buildMerge(local,latest.data.payload);
+  if(built.conflicts.length)throw Error('クラウド更新後に同じIDで内容差が見つかったため停止しました：'+built.conflicts.slice(0,5).join('、'));
   if(!confirm('統合中にクラウドが更新されました。最新データを再取得しました。\n'+summary()+'\n既存データを削除せず、もう一度統合を試しますか？'))return false;
  }
  if(saved?.error)throw saved.error;
@@ -418,29 +308,11 @@ async function mergeFieldDataSafely(){
  localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
  fieldSyncDiagnostics.status='端末・クラウドの不足データを統合済み';fieldSyncDiagnostics.localRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);renderFieldSyncDiagnostics();render();return true;
 }
-async function runScheduledFieldCloudSync(reason){
- while(fieldSyncInProgress)await new Promise(resolve=>setTimeout(resolve,250));
- await syncFieldCloud(reason);
-}
-async function runFinalFieldCloudSync(){
- while(fieldSyncInProgress)await new Promise(resolve=>setTimeout(resolve,250));
- await syncFieldCloud('30分後の定期同期');
- if(localStorage.getItem(FIELD_PENDING_KEY)==='1'){
-  updateFieldSyncState('最終同期を再試行します（1分後）');
-  fieldSyncTimers=[setTimeout(runFinalFieldCloudSync,60000)];
- }else{
-  fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
- }
-}
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
  fieldSyncWindowStarted=true;
- fieldSyncTimers=[
-  setTimeout(()=>runScheduledFieldCloudSync('5分後の定期同期'),300000),
-  setTimeout(()=>runScheduledFieldCloudSync('15分後の定期同期'),900000),
-  setTimeout(()=>runFinalFieldCloudSync(),1800000)
- ];
- updateFieldSyncState('端末保存済み・クラウド同期待ち（5分後／15分後／30分後）');
+ fieldSyncTimers=[setTimeout(()=>syncFieldCloud('8分後の定期同期'),480000),setTimeout(()=>{syncFieldCloud('30分後の定期同期');fieldSyncTimers=[];fieldSyncWindowStarted=false;},1800000)];
+ updateFieldSyncState('端末保存済み・クラウド同期待ち（8分後／30分後）');
 }
 async function syncFieldCloud(reason='同期'){
  if(!fieldCloudReady||fieldSyncInProgress||localStorage.getItem(FIELD_PENDING_KEY)!=='1')return;
@@ -450,10 +322,10 @@ async function syncFieldCloud(reason='同期'){
   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');
   const localSnapshot=cloneFieldData(db),snapshotText=JSON.stringify(localSnapshot);
   const baseText=localStorage.getItem(FIELD_BASE_KEY),baseAtStart=baseText?JSON.parse(baseText):cloneFieldData(fieldCloudBaseData||localSnapshot);
-  if(reason==='30分後の定期同期'&&localStorage.getItem(FIELD_FIRST_SYNC_OK_KEY)==='15'&&JSON.stringify(localSnapshot)===JSON.stringify(baseAtStart)){
+  if(reason==='30分後の定期同期'&&localStorage.getItem(FIELD_FIRST_SYNC_OK_KEY)==='1'&&JSON.stringify(localSnapshot)===JSON.stringify(baseAtStart)){
    localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
    fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
-   updateFieldSyncState('クラウド同期済み（5分後・15分後・30分後の確認完了）');
+   updateFieldSyncState('クラウド同期済み（8分後・30分後の確認完了）');
    return;
   }
   let payload=localSnapshot,lastError=null;
@@ -464,10 +336,9 @@ async function syncFieldCloud(reason='同期'){
     fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));localStorage.setItem('koujiFieldLastSyncAt_v1',String(Date.now()));fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(payload);
     if(JSON.stringify(db)===snapshotText){
      localStorage.setItem(key,JSON.stringify(payload));
-     if(reason==='5分後の定期同期'||reason==='15分後の定期同期'){
-      localStorage.setItem(FIELD_PENDING_KEY,'1');localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));
-      localStorage.setItem(FIELD_FIRST_SYNC_OK_KEY,reason==='5分後の定期同期'?'5':'15');
-      updateFieldSyncState(reason==='5分後の定期同期'?'1回目同期済み・15分後に2回目同期':'2回目同期済み・30分後に最終確認');
+     if(reason==='8分後の定期同期'){
+      localStorage.setItem(FIELD_PENDING_KEY,'1');localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));localStorage.setItem(FIELD_FIRST_SYNC_OK_KEY,'1');
+      updateFieldSyncState('1回目同期済み・30分後に最終確認');
      }else{
       localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
       fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
@@ -505,7 +376,7 @@ async function initializeFieldCloud(){
   localStorage.setItem('koujiFieldData_preCloud_v1',raw);
   if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します');
  }
- let localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
+ const localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
  const hasPendingLocal=localStorage.getItem(FIELD_PENDING_KEY)==='1';const savedSyncBase=localStorage.getItem(FIELD_BASE_KEY);
  fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.localCounts=fieldDataCounts(localData);
  if(!localData||typeof localData!=='object'||!Array.isArray(localData.projects)||!Array.isArray(localData.visits)||!Array.isArray(localData.dimensions)||!Array.isArray(localData.schedules))throw Error('端末側データの形式が不正です。データは変更せず停止しました');
@@ -522,14 +393,7 @@ async function initializeFieldCloud(){
   let cloudData=docResult.data.payload;
   if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
   if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
-  if(cloudData.resetToken&&localStorage.getItem('koujiFieldResetToken_v1')!==cloudData.resetToken){
-   const oldLocal=localStorage.getItem(key);if(oldLocal)localStorage.setItem('koujiFieldData_beforeReset_'+cloudData.resetToken,oldLocal);
-   localData={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[]};db=cloneFieldData(localData);
-   localStorage.setItem(key,JSON.stringify(localData));localStorage.setItem('koujiFieldResetToken_v1',cloudData.resetToken);
-   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
-   try{const pdfDb=await openPdfDb();await new Promise((resolve,reject)=>{const tx=pdfDb.transaction('pdfs','readwrite');tx.objectStore('pdfs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch(e){console.warn('Local PDF cleanup after shared reset failed',e);}
-  }
-  const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);fieldSyncDiagnostics.cloudProjectRows=(cloudData.projects||[]).map(p=>({name:p.name||'（名称なし）',completed:p.completed,completedDate:p.completedDate||p.completedAt||''}));
+  const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);
   if(localRevision>Number(docResult.data.revision)&&!hasPendingLocal){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
@@ -583,48 +447,18 @@ function startFieldRemoteUpdates(){
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteFieldUpdates('画面復帰時');});
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-function projectCreationDay(createdAt){
- const t=Date.parse(createdAt||'');const d=new Date((Number.isFinite(t)?t:Date.now())+9*60*60*1000);
- return String(d.getUTCFullYear()).padStart(4,'0')+String(d.getUTCMonth()+1).padStart(2,'0')+String(d.getUTCDate()).padStart(2,'0');
-}
-function nextProjectDisplayId(createdAt){
- const day=projectCreationDay(createdAt),used=new Set(db.projects.filter(p=>p.displayId&&String(p.displayId).startsWith(day+'-')).map(p=>Number(String(p.displayId).split('-').pop())).filter(Number.isFinite));
- let n=1;while(used.has(n))n++;
- return day+'-'+n;
-}
-function ensureProjectDisplayIds(){
- let changed=false;const seen=new Set();
- const sorted=[...db.projects].sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id)));
- for(const p of sorted){
-  const day=projectCreationDay(p.createdAt),valid=p.displayId&&/^\d{8}-\d+$/.test(String(p.displayId))&&String(p.displayId).startsWith(day+'-')&&!seen.has(String(p.displayId));
-  if(!valid){p.displayId=nextProjectDisplayId(p.createdAt);changed=true;}
-  seen.add(String(p.displayId));
- }
- return changed;
-}
-
 $('pWorkDate').addEventListener('change',()=>{const v=$('pWorkDate').value;if(v){const y=v.split('-')[0];if(y.length!==4||Number(y)<1||Number(y)>9999){$('pWorkDate').setCustomValidity('工事施工日の年は西暦4桁で入力してください。');$('pWorkDate').reportValidity();$('pWorkDate').value='';}else{$('pWorkDate').setCustomValidity('');}}});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
 const initialParams=new URLSearchParams(location.search);
-const initialPage=initialParams.get('page')||(initialParams.has('list')||initialParams.get('admin')==='diagnostics'?'cases':null);
+const initialPage=initialParams.get('page')||(initialParams.has('list')?'cases':null);
 const pageToShow=initialPage==='completed'?'cases':initialPage;
 if(['register','cases','schedule','ledger'].includes(pageToShow)){document.getElementById(pageToShow).classList.remove('hidden');}
 else{location.replace('./');}
-if(initialParams.get('admin')==='diagnostics'){
- const diagnosticPanel=document.getElementById('syncDiagnostics');
- if(diagnosticPanel)diagnosticPanel.classList.remove('hidden');
- document.querySelectorAll('main .page').forEach(el=>el.classList.add('hidden'));
- const diagnosticHeading=document.createElement('div');
- diagnosticHeading.className='panel';
- diagnosticHeading.innerHTML='<h2>共有設定・詳細管理</h2><p class="small">端末・クラウドのデータ件数を確認します。読み取り確認中です。</p><a class="home-button" href="./shared-setup.html">共有設定に戻る</a>';
- const main=document.querySelector('main');
- if(main&&diagnosticPanel)main.insertBefore(diagnosticHeading,diagnosticPanel);
-}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
-$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.projects.push(record);record.displayId=nextProjectDisplayId(record.createdAt);button.dataset.pendingId=record.id;}const workDate=$('pWorkDate').value,startTime=$('pStartTime').value,scheduleContent=$('pScheduleContent').value.trim();Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate,startTime,scheduleContent});if(workDate){let schedule=record.scheduleId?db.schedules.find(x=>x.id===record.scheduleId):null;if(!schedule){schedule={id:id(),createdAt:new Date().toISOString()};db.schedules.push(schedule);record.scheduleId=schedule.id;}Object.assign(schedule,{projectId:record.id,date:workDate,time:startTime,type:'工事',content:scheduleContent});}button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate','pStartTime','pScheduleContent'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
+$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
 window.toggleCompleted=function(pid){
  const project=db.projects.find(x=>x.id===pid);if(!project)return;
  if(project.completed){
@@ -668,7 +502,7 @@ window.toggleCompleted=function(pid){
 };
 let projectPage=1;
 const fieldPageParams=new URLSearchParams(location.search);
-let projectListMode=(fieldPageParams.get('page')==='completed'||fieldPageParams.get('list')==='completed'||(!fieldPageParams.has('page')&&!fieldPageParams.has('list')&&localStorage.getItem('koujiFieldProjectListMode_v1')==='completed'))?'completed':'open';
+let projectListMode=(fieldPageParams.get('list')==='completed'||fieldPageParams.get('page')==='completed'||(!fieldPageParams.has('list')&&!fieldPageParams.has('page')&&localStorage.getItem('koujiFieldProjectListMode_v1')==='completed'))?'completed':'open';
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
@@ -678,7 +512,7 @@ function renderProjects(){
   const bd=showCompleted?(b.completedDate||b.completedAt||b.createdAt):(b.createdAt);
   return (bd||'').localeCompare(ad||'');
  });
- const filtered=q?sorted.filter(p=>[p.displayId,p.name,p.customer,p.address,p.assignee].some(x=>String(x||'').toLowerCase().includes(q))):sorted;
+ const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address,p.assignee].some(x=>(x||'').toLowerCase().includes(q))):sorted;
  const total=filtered.length;
  const pageCount=Math.max(1,Math.ceil(total/PROJECTS_PER_PAGE));
  if(projectPage>pageCount)projectPage=pageCount;
@@ -687,7 +521,7 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
   const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
-  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">現場ID：${esc(p.displayId||'採番待ち')}<br>${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
  }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
@@ -701,15 +535,15 @@ $('projectSearch').oninput=()=>{projectPage=1;renderProjects()};
 function renderSelectedProject(){
  const p=db.projects.find(x=>x.id===$('dProject').value);
  const box=$('selectedProjectInfo');
- $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name+'（現場ID：'+(p.displayId||'採番待ち')+'）':'';
+ $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name:'';
  if(!p){box.className='item empty';box.textContent='現場を選択すると、現場情報がここに表示されます。';return;}
  box.className='item';
- box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">現場ID：${esc(p.displayId||'採番待ち')}<br>顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
+ box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
 }
 $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
-function fillProjectSelects(){const id='dProject';let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}（${esc(p.displayId||'ID未設定')}）</option>`).join('');$(id).value=old}
-function renderDimensions(){const selected=$('dProject').value;const records=db.dimensions.filter(d=>d.projectId===selected).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));const record=records[0]||null;const button=$('saveDimension');button.dataset.recordId=record?record.id:'';$('dDate').value=record?.date||'';$('dLabel').value=record?.label||'';$('dValue').value=record?.value||'';$('dMemo').value=record?.memo||'';}
-$('saveDimension').onclick=async()=>{const button=$('saveDimension');if(button.disabled)return;const projectId=$('dProject').value;if(!projectId||!$('dLabel').value.trim())return alert('現場と記録項目を入力してください');let record=button.dataset.recordId?db.dimensions.find(x=>x.id===button.dataset.recordId&&x.projectId===projectId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.dimensions.push(record);button.dataset.recordId=record.id;}const before=cloneFieldData(db);Object.assign(record,{projectId,date:$('dDate').value,label:$('dLabel').value,value:$('dValue').value,memo:$('dMemo').value,updatedAt:new Date().toISOString()});button.disabled=true;button.textContent='保存中…';try{await save();button.textContent='保存しました';}catch(e){db=before;localStorage.setItem(key,JSON.stringify(before));button.textContent='保存に失敗';}finally{button.disabled=false;setTimeout(()=>{button.textContent='寸法を保存'},1200)}};
+function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
+$('saveDimension').onclick=async()=>{const button=$('saveDimension');if(button.disabled)return;if(!$('dProject').value||!$('dLabel').value.trim())return alert('現場と記録項目を入力してください');let record=button.dataset.pendingId?db.dimensions.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.dimensions.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{projectId:$('dProject').value,date:$('dDate').value,label:$('dLabel').value,value:$('dValue').value,unit:$('dUnit').value,memo:$('dMemo').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;['dDate','dLabel','dValue','dMemo'].forEach(x=>$(x).value='');render()}catch(e){}finally{button.disabled=false;button.textContent='寸法を保存'}};
+function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
 let calendarMonth=new Date();calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1);
 let selectedCalendarDate=new Date().toISOString().slice(0,10);
 const pad2=n=>String(n).padStart(2,'0');
@@ -738,12 +572,12 @@ function renderSelectedDay(){
  const d=new Date(selectedCalendarDate+'T00:00:00');
  $('selectedDateHeading').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）の予定';
  const a=db.schedules.filter(x=>x.date===selectedCalendarDate).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
- $('selectedDayEvents').innerHTML=a.length?a.map(x=>{const p=x.projectId?db.projects.find(p=>p.id===x.projectId):null;const title=p?esc(p.name)+'（'+esc(p.displayId||'ID未設定')+'）':'現場指定なし';return '<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+title+'</strong><span class="event-type">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>'}).join(''):'<div class="empty">この日の予定はありません。</div>';
+ $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
 }
 $('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
 $('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
-$('saveSchedule').onclick=async()=>{const button=$('saveSchedule');if(button.disabled)return;if(!$('sDate').value)return alert('予定日を入力してください');let record=button.dataset.pendingId?db.schedules.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.schedules.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{projectId:'',date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;selectedCalendarDate=$('sDate').value;const d=new Date(selectedCalendarDate+'T00:00:00');calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);['sDate','sTime','sContent'].forEach(x=>$(x).value='');renderCalendar();renderSelectedDay()}catch(e){}finally{button.disabled=false;button.textContent='予定を登録'}};
+$('saveSchedule').onclick=async()=>{const button=$('saveSchedule');if(button.disabled)return;if(!$('sDate').value)return alert('予定日を入力してください');let record=button.dataset.pendingId?db.schedules.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.schedules.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;selectedCalendarDate=$('sDate').value;const d=new Date(selectedCalendarDate+'T00:00:00');calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);['sDate','sTime','sContent'].forEach(x=>$(x).value='');renderCalendar();renderSelectedDay()}catch(e){}finally{button.disabled=false;button.textContent='予定を登録'}};
 function renderSchedules(){renderCalendar();renderSelectedDay()}
 function getFieldRecoveryCandidates(){
  const keys=['koujiFieldData_preCloud_v1',...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(k=>k&&k.startsWith('koujiFieldData_revisionConflict_'))];
@@ -754,30 +588,18 @@ function getFieldRecoveryCandidates(){
  return sources;
 }
 async function showFieldRecoveryIfNeeded(){
- if(new URLSearchParams(location.search).get('admin')!=='diagnostics')return;
  const sources=getFieldRecoveryCandidates();
- const types=['projects','visits','dimensions','schedules','pdfs'];
- const labels={projects:'現場',visits:'訪問履歴',dimensions:'寸法記録',schedules:'工事予定',pdfs:'写真PDF'};
- const missingByType={};
- for(const k of types){
-  const existing=new Set((db[k]||[]).map(x=>x&&x.id).filter(Boolean));missingByType[k]=[];
-  for(const source of sources)for(const item of source.data[k]||[])if(item&&item.id&&!existing.has(item.id)){existing.add(item.id);missingByType[k].push(item);}
- }
- const totalMissing=Object.values(missingByType).reduce((n,a)=>n+a.length,0);
+ const existing=new Set((db.projects||[]).map(p=>p&&p.id).filter(Boolean));
+ const missing=[];
+ for(const source of sources)for(const p of source.data.projects||[])if(p&&p.id&&!existing.has(p.id)){existing.add(p.id);missing.push(p);}
+ if(!missing.length)return;
  let box=document.getElementById('fieldRecoveryPanel');
  if(!box){box=document.createElement('section');box.id='fieldRecoveryPanel';box.className='panel';const main=document.querySelector('main');main.insertBefore(box,main.firstChild);}
- if(!sources.length){
-  box.innerHTML='<h2>端末バックアップ確認</h2><p>確認できる端末バックアップは見つかりませんでした。</p><p class="small">この表示だけでは、別の保存先にバックアップが存在しないとは判断できません。データの削除・同期は行っていません。</p>';
-  return;
- }
- const sourceSummary=sources.map(source=>'<div class="small">'+esc(source.key)+'：'+types.map(k=>labels[k]+' '+(source.data[k]||[]).length+'件').join(' / ')+'</div>').join('');
- const missingSummary=types.map(k=>labels[k]+' '+missingByType[k].length+'件').join(' / ');
- box.innerHTML='<h2>端末バックアップ確認</h2><p>バックアップ '+sources.length+'件を確認しました。</p>'+sourceSummary+'<hr><p><strong>現在のデータにない項目：'+totalMissing+'件</strong></p><p class="small">'+missingSummary+'</p>'+(totalMissing?'<p class="small">既存データを上書きせず、不足しているIDの項目だけを追加します。</p><button type="button" class="primary" id="recoverFieldDataButton">不足データを確認して復元</button>':'<p class="small">バックアップ内に、現在のデータにないIDの項目は見つかりませんでした。復元操作は行っていません。</p>');
- const recoverButton=document.getElementById('recoverFieldDataButton');if(!recoverButton)return;
- recoverButton.onclick=async()=>{
-  const summary=types.map(k=>labels[k]+': 不足 '+missingByType[k].length+'件').join('\n');
-  if(!confirm('退避データをクラウドと照合します。既存データは上書きせず、不足分のみ追加します。\n\n'+summary+'\n\n復元を続けますか？'))return;
-  recoverButton.disabled=true;
+ box.innerHTML='<h2>退避データから現場を復元できます</h2><p>クラウドにない現場データが、端末のバックアップに'+missing.length+'件見つかりました。</p><p class="small">既存のクラウドデータは削除・上書きせず、不足しているデータだけを追加します。</p><button type="button" class="primary" id="recoverFieldDataButton">不足データを確認して復元</button>';
+ document.getElementById('recoverFieldDataButton').onclick=async()=>{
+  const summary=['projects','visits','dimensions','schedules','pdfs'].map(k=>k+': '+sources.reduce((n,x)=>n+(Array.isArray(x.data[k])?x.data[k].length:0),0)+'件').join('\\n');
+  if(!confirm('退避データをクラウドと照合します。既存のクラウドデータは残し、不足分のみ追加します。\\n\\n'+summary+'\\n\\n復元を続けますか？'))return;
+  const button=document.getElementById('recoverFieldDataButton');button.disabled=true;
   try{
    const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
    let done=false,lastError=null;
@@ -786,37 +608,26 @@ async function showFieldRecoveryIfNeeded(){
     if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウドデータが見つかりません');
     const remote=latest.data.payload;if(!remote||!Array.isArray(remote.projects))throw Error('クラウドデータの形式が不正です');
     const merged={...remote};
-    for(const k of types){
-     const current=Array.isArray(remote[k])?remote[k]:[];const seen=new Set(current.map(x=>x&&x.id).filter(Boolean));merged[k]=current.slice();
-     for(const item of missingByType[k])if(!seen.has(item.id)){seen.add(item.id);merged[k].push(item);}
+    for(const k of ['projects','visits','dimensions','schedules','pdfs']){
+     const current=Array.isArray(remote[k])?remote[k]:[];
+     const seen=new Set(current.map(x=>x&&x.id).filter(Boolean));
+     merged[k]=current.slice();
+     for(const source of sources)for(const item of (Array.isArray(source.data[k])?source.data[k]:[]))if(item&&item.id&&!seen.has(item.id)){seen.add(item.id);merged[k].push(item);}
     }
     const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});
-    if(!error){const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('復元の保存結果を確認できません');db=merged;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(db);localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;done=true;break;}
+    if(!error){
+     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('復元の保存結果を確認できません');
+     db=merged;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(db);localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;done=true;break;
+    }
     lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
    }
    if(!done)throw lastError||Error('クラウド更新が続いています。時間をおいて再試行してください');
-   box.remove();projectPage=1;render();alert('退避データの復元が完了しました。訪問履歴などを確認してください。');
-  }catch(e){recoverButton.disabled=false;alert('復元できませんでした。データは変更していません。\n'+(e.message||e));}
+   box.remove();projectPage=1;render();alert('退避データの復元が完了しました。未完了現場・工事完了履歴を確認してください。');
+  }catch(e){button.disabled=false;alert('復元できませんでした。データは変更していません。\\n'+(e.message||e));}
  };
 }
-function renderProjectInventory(){
- const el=document.getElementById('projectInventory');if(!el)return;
- const rows=(db.projects||[]).map((p,i)=>({i:i+1,name:p.name||'（名称なし）',id:p.id,completed:p.completed,completedDate:p.completedDate||p.completedAt||'',origin:'端末'}));
- const cloudRows=(fieldSyncDiagnostics.cloudProjectRows||[]);
- el.textContent='【現場一覧・完了状態】\\n'+rows.map(x=>x.i+'. '+x.name+' / completed='+String(x.completed)+' / 完了日='+(x.completedDate||'なし')).join('\\n')+'\\n\\n【クラウド側の現場一覧】\\n'+(cloudRows.length?cloudRows.map((x,i)=>(i+1)+'. '+x.name+' / completed='+String(x.completed)+' / 完了日='+(x.completedDate||'なし')).join('\\n'):'クラウド一覧は未取得');
-}
-function render(){
- const params=new URLSearchParams(location.search);
- if(params.get('page')==='completed'||params.get('list')==='completed')projectListMode='completed';
- else if(params.get('page')==='cases'||params.get('list')==='open')projectListMode='open';
- const title=document.getElementById('casesTitle');
- if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';
- try{renderProjects()}catch(e){const box=document.getElementById('projectList');if(box)box.textContent='一覧表示エラー：'+(e.message||e);console.error('renderProjects',e);return;}
- try{fillProjectSelects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
- catch(e){const box=document.getElementById('projectList');if(box)box.insertAdjacentHTML('beforeend','<div class="small">画面更新エラー：'+esc(e.message||e)+'</div>');console.error('render details',e);}
-}
-if(pageToShow==='cases')render();
+function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
@@ -863,49 +674,20 @@ window.downloadSavedPdf=async function(id){
   const url=URL.createObjectURL(record.blob);const a=document.createElement('a');a.href=url;a.download=meta.fileName||record.fileName||'現場写真.pdf';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
  }catch(e){alert('PDFをダウンロードできませんでした：'+(e.message||e));}
 };
-const deletingSavedPdfIds=new Set();
 window.deleteSavedPdf=async function(id){
-  const meta=(db.pdfs||[]).find(x=>x.id===id);if(!meta)return alert('PDF情報が見つかりません');
-  if(deletingSavedPdfIds.has(id))return;
-  if(!confirm('「'+meta.fileName+'」を削除しますか？\\n共有データから削除した後、PDF本体を削除します。'))return;
-  deletingSavedPdfIds.add(id);
-  const originalMeta={...meta};
-  const restoreMetadata=async()=>{
-   if(!(db.pdfs||[]).some(x=>x.id===id))db.pdfs.push(originalMeta);
-   await save();renderProjectPdfs();
-   await runScheduledFieldCloudSync('写真PDF削除の取消同期');
-   if(localStorage.getItem(FIELD_PENDING_KEY)==='1')throw Error('削除取消情報のクラウド同期を確認できません。端末データは保持しています。');
-  };
-  try{
-   // 先に共有メタデータの削除をクラウドへ確定し、確定前にPDF本体を消さない
-   db.pdfs=(db.pdfs||[]).filter(x=>x.id!==id);
-   await save();renderProjectPdfs();
-   await runScheduledFieldCloudSync('写真PDF削除情報の同期');
-   if(localStorage.getItem(FIELD_PENDING_KEY)==='1')throw Error('削除情報のクラウド同期に失敗しました。PDF本体は削除していません。');
-   // 共有メタデータの同期成功後にクラウド本体を削除
-   if(originalMeta.storagePath){
-    const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません。PDF本体は削除していません。');
-    const {error}=await cloud.client.storage.from('field-pdfs').remove([originalMeta.storagePath]);if(error)throw error;
-   }
-  }catch(e){
-   try{
-    await restoreMetadata();
-    $('pdfSaveStatus').textContent='削除を中止し、PDF情報を復元しました。PDF本体は保持しています。';
-   }catch(restoreError){
-    $('pdfSaveStatus').textContent='削除処理を完了できません。PDF本体は保持しています。復元同期も未確認です：'+(restoreError.message||restoreError);
-   }
-   alert('写真PDFを削除できませんでした：'+(e.message||e));
-   deletingSavedPdfIds.delete(id);renderProjectPdfs();return;
+ const meta=(db.pdfs||[]).find(x=>x.id===id);if(!meta)return alert('PDF情報が見つかりません');
+ if(!confirm('「'+meta.fileName+'」を削除しますか？\\n削除すると、この現場の共有データからも削除されます。'))return;
+ try{
+  if(meta.storagePath){
+   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません。削除は実行していません。');
+   const {error}=await cloud.client.storage.from('field-pdfs').remove([meta.storagePath]);if(error)throw error;
   }
-  // クラウド本体の削除成功後に、この端末のPDF本体を削除する
-  try{
-   const d=await openPdfDb();
-   await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
-   $('pdfSaveStatus').textContent='写真PDFを共有データ・クラウド・この端末から削除しました。';
-  }catch(e){
-   $('pdfSaveStatus').textContent='共有データとクラウドからは削除済みです。この端末の一時データ整理だけ完了していません：'+(e.message||e);
-  }finally{deletingSavedPdfIds.delete(id);renderProjectPdfs();}
- };
+  const d=await openPdfDb();
+  await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
+  db.pdfs=db.pdfs.filter(x=>x.id!==id);await save();renderProjectPdfs();
+  $('pdfSaveStatus').textContent='写真PDFを削除しました。';
+ }catch(e){alert('PDFを削除できませんでした：'+(e.message||e));}
+};
 window.openSavedPdf=async function(id){
  try{
   const meta=(db.pdfs||[]).find(x=>x.id===id);if(!meta)return alert('PDF情報が見つかりません');
@@ -920,47 +702,28 @@ window.openSavedPdf=async function(id){
   const u=URL.createObjectURL(record.blob);const w=window.open(u,'_blank');if(!w){const a=document.createElement('a');a.href=u;a.download=record.fileName||meta.fileName;a.click();}setTimeout(()=>URL.revokeObjectURL(u),60000);
  }catch(e){alert('PDFを開けませんでした：'+(e.message||e));}
 };
-let pendingPhotoPdfUploadBusy=false;
-async function syncPendingPhotoPdfUploads(){
- if(pendingPhotoPdfUploadBusy||!fieldCloudReady)return;
- const cloud=window.KoujiCloud;if(!cloud?.ready||!cloud.user?.id)return;
- pendingPhotoPdfUploadBusy=true;
- let uploaded=0,failed=0;
- try{
-  const pending=(db.pdfs||[]).filter(x=>!x.storagePath);
-  for(const meta of pending){
-   try{
-    const record=await getPdfRecord(meta.id);
-    if(!record?.blob)continue;
-    const storagePath=cloud.user.id+'/'+meta.projectId+'/'+meta.id+'.pdf';
-    const {error}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
-    if(error)throw error;
-    meta.storagePath=storagePath;uploaded++;
-   }catch(e){failed++;console.warn('Pending photo PDF upload failed',meta.id,e);}
-  }
-  if(uploaded){await save();renderProjectPdfs();}
-  if(failed)$('pdfSaveStatus').textContent='未送信の写真PDF '+failed+'件は端末に保持しています。通信復帰後に再送します。';
-  else if(uploaded)$('pdfSaveStatus').textContent='未送信だった写真PDF '+uploaded+'件をクラウドへ送信しました。';
- }finally{pendingPhotoPdfUploadBusy=false;}
-}
-async function registerPhotoPdfImmediately(record,category,projectId){
- let meta=(db.pdfs||[]).find(x=>x.id===record.id);
- if(!meta){meta={id:record.id,projectId,category:['report','support'].includes(category)?category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath:null};db.pdfs.push(meta);}
- $('dProject').value=projectId;await save();render();
- $('pdfSaveStatus').textContent='写真PDFを端末に保存し、一覧に反映しました。クラウド保存を確認しています…';
- try{
-  const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
-  const storagePath=cloud.user.id+'/'+projectId+'/'+record.id+'.pdf';
-  if(!meta.storagePath){const {error}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});if(error)throw error;meta.storagePath=storagePath;}
-  await save();render();$('pdfSaveStatus').textContent='写真PDFを端末とクラウドに保存しました。他の端末からも開けます。';
- }catch(e){$('pdfSaveStatus').textContent='写真PDFは端末に保存済みで、一覧にも反映しました。クラウド保存は未完了です：'+(e.message||e);console.error('Photo PDF cloud upload failed',e);}
-}
 window.addEventListener('message',async event=>{
- if(event.origin!==PHOTO_MAKER_ORIGIN)return;const m=event.data;
+ if(event.origin!==PHOTO_MAKER_ORIGIN)return;
+ const m=event.data;
  if(!m||m.type!=='PHOTO_PDF_READY'||!m.projectId||!(m.pdfBytes instanceof ArrayBuffer))return;
- if(!db.projects.some(p=>p.id===m.projectId))return;
- try{const blob=new Blob([m.pdfBytes],{type:'application/pdf'});const record={id:id(),projectId:m.projectId,fileName:m.fileName||'現場写真.pdf',createdAt:new Date().toISOString(),size:blob.size,sizeLabel:fmtBytes(blob.size),blob};await savePdfBlob(record);await registerPhotoPdfImmediately(record,m.category,m.projectId);event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);}
- catch(e){$('pdfSaveStatus').textContent='写真PDFを一覧に反映できませんでした：'+(e.message||e);event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);}
+ const project=db.projects.find(p=>p.id===m.projectId);
+ if(!project)return;
+ try{
+  const blob=new Blob([m.pdfBytes],{type:'application/pdf'});
+  const record={id:id(),projectId:m.projectId,fileName:m.fileName||'現場写真.pdf',createdAt:new Date().toISOString(),size:blob.size,sizeLabel:fmtBytes(blob.size),blob};
+  await savePdfBlob(record);
+  const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('ログイン状態を確認できません。PDFはこの端末に保存しました。');
+  const storagePath=cloud.user.id+'/'+m.projectId+'/'+record.id+'.pdf';
+  const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,blob,{contentType:'application/pdf',upsert:false});
+  if(uploadError)throw new Error('端末には保存しましたが、クラウドPDF保存に失敗しました：'+uploadError.message);
+  db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(m.category)?m.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
+  await save();renderProjectPdfs();
+  $('pdfSaveStatus').textContent='写真PDFを端末とクラウドに保存しました。他の端末からも開けます。';
+  event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);
+ }catch(e){
+  $('pdfSaveStatus').textContent='自動保存できませんでした：'+(e.message||e);
+  event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);
+ }
 });
 window.openProjectPhotoMaker=(category)=>{
  const p=db.projects.find(x=>x.id===$('dProject').value);
@@ -974,50 +737,36 @@ window.openProjectPhotoMaker=(category)=>{
 };
 
 async function processPhotoPdfReturn(){
- const raw=localStorage.getItem('genbaPhotoPdfReturn_v1');if(!raw)return;
- let handoff;try{handoff=JSON.parse(raw)}catch(e){return}
+ const raw=localStorage.getItem('genbaPhotoPdfReturn_v1');
+ if(!raw)return;
+ let handoff;
+ try{handoff=JSON.parse(raw)}catch(e){localStorage.removeItem('genbaPhotoPdfReturn_v1');return}
  const project=db.projects.find(p=>p.id===handoff.projectId);
  if(!project){$('pdfSaveStatus').textContent='保存先の現場が見つかりません。PDFデータは端末内に保持されています。';return}
- $('dProject').value=handoff.projectId;render();$('pdfSaveStatus').textContent='作成した写真PDFを一覧に反映しています…';
- try{const record=await getPdfRecord(handoff.recordId);if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');await registerPhotoPdfImmediately(record,handoff.category,handoff.projectId);localStorage.removeItem('genbaPhotoPdfReturn_v1');$('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});}
- catch(e){$('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、一覧への反映を完了できませんでした：'+(e.message||e);console.error('Photo PDF return failed',e);}
+ try{
+  const record=await getPdfRecord(handoff.recordId);
+  if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');
+  if(!(db.pdfs||[]).some(x=>x.id===record.id)){
+   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
+   const storagePath=cloud.user.id+'/'+record.projectId+'/'+record.id+'.pdf';
+   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
+   if(uploadError)throw new Error('クラウドPDF保存に失敗しました：'+uploadError.message);
+   db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(handoff.category)?handoff.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
+   await save();
+  }
+  localStorage.removeItem('genbaPhotoPdfReturn_v1');
+  $('dProject').value=record.projectId;
+  render();$('pdfSaveStatus').textContent='写真PDFをこの現場の端末とクラウドに保存しました。下の「保存済み写真PDF」から開いて写真を確認できます。';
+  $('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});
+ }catch(e){
+  $('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、クラウド保存を完了できませんでした。再読み込みして再試行してください。'+(e.message||'');
+  console.error('Photo PDF return failed',e);
+ }
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){render();checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});
-window.addEventListener('pageshow',event=>{
- // ブラウザの戻る操作で復帰した場合は、通信を待たず端末内データを即時表示する
- if(event.persisted){render();}
-});
-window.addEventListener('online',()=>syncPendingPhotoPdfUploads());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');});
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
-// 画面はクラウド応答を待たず、端末に保存済みのデータで先に描画する。
-// その後、クラウドの最新データ取得が完了した時点で再描画する。
-const initialReturnProjectId=new URLSearchParams(location.search).get('projectId');
-if(initialReturnProjectId&&db.projects.some(p=>p.id===initialReturnProjectId))$('dProject').value=initialReturnProjectId;
-render();
-const adminDiagnosticsEarly=new URLSearchParams(location.search).get('admin')==='diagnostics';
-if(adminDiagnosticsEarly){
- document.getElementById('syncDiagnostics').classList.remove('hidden');
- document.querySelectorAll('main > section.page').forEach(el=>el.classList.add('hidden'));
- const heading=document.createElement('div');heading.className='panel';heading.innerHTML='<h2>共有設定・詳細管理</h2><p class="small">同期診断と端末バックアップの確認画面です。</p><a class="home-button" href="./shared-setup.html" style="background:#173f59;color:#fff;border:0">← 共有設定に戻る</a>';
- document.querySelector('main').insertBefore(heading,document.getElementById('syncDiagnostics'));
- fieldSyncDiagnostics.status='クラウド接続を確認中';
- fieldSyncDiagnostics.localCounts=fieldDataCounts(db);
- renderFieldSyncDiagnostics();
-}
 (async()=>{try{
  await initializeFieldCloud();
- render();
- renderProjectInventory();
- await syncPendingPhotoPdfUploads();
- const adminDiagnostics=new URLSearchParams(location.search).get('admin')==='diagnostics';
- if(adminDiagnostics){
-  document.getElementById('syncDiagnostics').classList.remove('hidden');
-  document.querySelectorAll('main > section.page').forEach(el=>el.classList.add('hidden'));
-  const heading=document.createElement('div');heading.className='panel';heading.innerHTML='<h2>共有設定・詳細管理</h2><p class="small">同期診断と端末バックアップの確認画面です。</p><a class="home-button" href="./shared-setup.html" style="background:#173f59;color:#fff;border:0">← 共有設定に戻る</a>';
-  document.querySelector('main').insertBefore(heading,document.getElementById('syncDiagnostics'));
- }
- await showFieldRecoveryIfNeeded();
- if(ensureProjectDisplayIds())await save();
  startFieldRemoteUpdates();
  if(localStorage.getItem(FIELD_PENDING_KEY)==='1')await syncFieldCloud('アプリ再起動時の未同期データ確認');
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
