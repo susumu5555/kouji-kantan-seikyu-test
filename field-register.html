@@ -101,7 +101,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div class="panel">
 <h2>工事台帳（寸法記録）</h2>
 <div id="ledgerProjectHeading" class="small"></div>
-<label>対象現場 *</label><select id="dProject"></select>
+<select id="dProject" hidden aria-hidden="true" tabindex="-1"></select>
 <div id="selectedProjectInfo" class="item empty">現場を選択すると、現場情報がここに表示されます。</div>
 <div id="projectPdfList"></div>
 <div id="pdfSaveStatus" class="small" aria-live="polite"></div>
@@ -333,5 +333,5 @@ $('openCamera').onclick=()=>{
  $('pdfSaveStatus').textContent='写真PDFメーカーでPDFを作成すると、この現場へ自動保存します。';
 };
 
-(async()=>{try{const rev=await initializeFieldCloud();render();const n=document.createElement('div');n.className='panel';n.textContent='クラウド同期接続済み（revision '+rev+'）。写真PDFのクラウド共有に対応しています。';document.querySelector('main').prepend(n)}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
+(async()=>{try{await initializeFieldCloud();render()}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
 </script></body></html>
