@@ -772,10 +772,6 @@ window.deleteSavedPdf=async function(id){
     const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません。PDF本体は削除していません。');
     const {error}=await cloud.client.storage.from('field-pdfs').remove([originalMeta.storagePath]);if(error)throw error;
    }
-   // クラウド本体の削除成功後に、この端末のPDF本体を削除
-   const d=await openPdfDb();
-   await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
-   renderProjectPdfs();$('pdfSaveStatus').textContent='写真PDFを共有データ・クラウド・この端末から削除しました。';
   }catch(e){
    try{
     await restoreMetadata();
@@ -784,6 +780,15 @@ window.deleteSavedPdf=async function(id){
     $('pdfSaveStatus').textContent='削除処理を完了できません。PDF本体は保持しています。復元同期も未確認です：'+(restoreError.message||restoreError);
    }
    alert('写真PDFを削除できませんでした：'+(e.message||e));
+   deletingSavedPdfIds.delete(id);renderProjectPdfs();return;
+  }
+  // クラウド本体の削除成功後に、この端末のPDF本体を削除する
+  try{
+   const d=await openPdfDb();
+   await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
+   $('pdfSaveStatus').textContent='写真PDFを共有データ・クラウド・この端末から削除しました。';
+  }catch(e){
+   $('pdfSaveStatus').textContent='共有データとクラウドからは削除済みです。この端末の一時データ整理だけ完了していません：'+(e.message||e);
   }finally{deletingSavedPdfIds.delete(id);renderProjectPdfs();}
  };
 window.openSavedPdf=async function(id){
