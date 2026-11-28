@@ -24,7 +24,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </style>
 </head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v186</span></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v187</span></div></header>
 <main>
 <button class="new" type="button" data-feature="現場登録">＋ 現場登録</button>
 <section class="grid" aria-label="メニュー">
@@ -50,8 +50,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 <span>共有設定</span>
 </button>
 <p class="notice">現場データはログイン後にクラウドへ同期されます。写真PDFは新規保存時にクラウドへ保存され、別端末から開けます。</p>
+<input type="file" id="homeRestoreFile" accept=".json,application/json" hidden>
 </main>
 <script>
+const homeRestoreInput=document.getElementById('homeRestoreFile');
+document.querySelector('[data-feature="復元"]')?.addEventListener('click',()=>homeRestoreInput.click());
+homeRestoreInput?.addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ try{const text=await file.text();JSON.parse(text);sessionStorage.setItem('koujiPendingRestoreFile_v1',text);location.href='./field-register.html?page=cases&backupAction=restorePending';}
+ catch(error){alert('バックアップファイルを読み取れません：'+(error.message||error));}
+ finally{event.target.value='';}
+});
 document.querySelectorAll('[data-feature]').forEach(button=>{
   button.addEventListener('click',()=>{
     const feature=button.dataset.feature;
@@ -62,7 +71,7 @@ document.querySelectorAll('[data-feature]').forEach(button=>{
         const data=JSON.parse(raw);
         if(!data||!Array.isArray(data.projects)){alert('現場データを読み取れませんでした。');return;}
         const now=new Date(),stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('');
-        const backup={format:'kouji-field-backup',version:1,createdAt:now.toISOString(),appVersion:'v186',data};
+        const backup={format:'kouji-field-backup',version:1,createdAt:now.toISOString(),appVersion:'v187',data};
         const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
         const url=URL.createObjectURL(blob),a=document.createElement('a');
         a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();
@@ -71,7 +80,7 @@ document.querySelectorAll('[data-feature]').forEach(button=>{
         return;
       }catch(error){alert('バックアップを作成できませんでした：'+(error.message||error));return;}
     }
-    const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?list=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html','復元':'./field-register.html?page=cases&backupAction=restore'};
+    const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?list=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html','復元':'#open-restore-picker'};
     if(routes[feature]){location.href=routes[feature];return;}
     alert('この機能は現在利用できません。');
   });
