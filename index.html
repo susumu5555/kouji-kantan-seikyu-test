@@ -69,10 +69,17 @@ document.querySelectorAll('[data-feature]').forEach(button=>{
       const frame=document.createElement('iframe');
       frame.id='homeBackupFrame';frame.title='バックアップ処理';frame.setAttribute('aria-hidden','true');
       frame.style.cssText='position:fixed;width:1px;height:1px;left:-10px;bottom:0;border:0;opacity:0;pointer-events:none';
-      frame.src='./field-register.html?page=cases&backupAction=backup';
+      frame.src='./field-register.html?page=cases&backupOnly=1';
       document.body.appendChild(frame);
       button.disabled=true;const label=button.querySelector('span');const previous=label?.textContent;if(label)label.textContent='バックアップ準備中…';
-      setTimeout(()=>{frame.remove();button.disabled=false;if(label)label.textContent=previous||'バックアップ';},90000);
+      const finish=event=>{
+        if(event.origin!==location.origin||event.data?.type!=='kouji-backup-result')return;
+        window.removeEventListener('message',finish);frame.remove();button.disabled=false;if(label)label.textContent=previous||'バックアップ';
+        if(event.data.ok)alert('バックアップを作成しました。写真PDFの実ファイルも含まれています。ダウンロードフォルダを確認してください。');
+        else alert('バックアップを作成できませんでした。共有設定と写真PDFの保存状態を確認してください。');
+      };
+      window.addEventListener('message',finish);
+      setTimeout(()=>{window.removeEventListener('message',finish);if(frame.isConnected){frame.remove();button.disabled=false;if(label)label.textContent=previous||'バックアップ';alert('バックアップ処理が時間内に完了しませんでした。もう一度お試しください。');}},300000);
       return;
     }
     const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?list=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html','復元':'#open-restore-picker'};
