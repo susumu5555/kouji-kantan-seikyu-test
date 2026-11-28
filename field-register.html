@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v184</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v185</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -459,13 +459,34 @@ document.getElementById('fieldBackupButton')?.addEventListener('click',()=>downl
 document.getElementById('fieldRestoreButton')?.addEventListener('click',()=>document.getElementById('fieldRestoreFile').click());
 document.getElementById('fieldRestoreFile')?.addEventListener('change',async event=>{
  const file=event.target.files?.[0];if(!file)return;const status=document.getElementById('fieldBackupStatus');
- try{const parsed=JSON.parse(await file.text()),backup=parsed?.format==='kouji-field-backup'?parsed.data:parsed;
- if(!backup||!Array.isArray(backup.projects))throw Error('現場データのバックアップとして認識できません');
- if(!confirm('バックアップファイルを読み込みます。現在のデータは削除せず、同じIDのデータは現在の内容を優先し、不足しているデータだけを追加します。続けますか？'))return;
- const merged=cloneFieldData(db);
- for(const k of ['projects','visits','dimensions','schedules','pdfs']){const current=Array.isArray(merged[k])?merged[k]:[],seen=new Set(current.map(x=>x?.id).filter(Boolean));for(const item of (Array.isArray(backup[k])?backup[k]:[]))if(item?.id&&!seen.has(item.id)){seen.add(item.id);current.push(item);}merged[k]=current;}
- db=merged;await save();render();status.textContent='復元が完了しました。不足していたデータを追加しました。既存データは削除していません。';
- }catch(e){status.textContent='復元できませんでした：'+(e.message||e);}finally{event.target.value='';}
+ try{
+  const parsed=JSON.parse(await file.text()),backup=parsed?.format==='kouji-field-backup'?parsed.data:parsed;
+  if(!backup||!Array.isArray(backup.projects))throw Error('現場データのバックアップとして認識できません');
+  const restored={projects:backup.projects,visits:Array.isArray(backup.visits)?backup.visits:[],dimensions:Array.isArray(backup.dimensions)?backup.dimensions:[],schedules:Array.isArray(backup.schedules)?backup.schedules:[],pdfs:Array.isArray(backup.pdfs)?backup.pdfs:[]};
+  const counts=fieldDataCounts(restored);
+  if(!confirm('【完全復元・重要】現在の端末とクラウドの現場データを、選択したバックアップファイルの内容に置き換えます。\n\n現在のデータにしかない現場・履歴・寸法・予定・PDF管理情報は削除されます。\nバックアップ時点の状態に戻します。\n\n復元件数：現場 '+counts.projects+'件／訪問 '+counts.visits+'件／寸法 '+counts.dimensions+'件／予定 '+counts.schedules+'件／PDF管理情報 '+counts.pdfs+'件\n\n本当に完全復元しますか？'))return;
+  status.textContent='クラウドを完全復元中です。画面を閉じないでください。';
+  fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
+  await fieldCloudQueue.catch(()=>{});
+  const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません。復元は実行していません。');
+  let saved=false,lastError=null;
+  for(let attempt=0;attempt<8;attempt++){
+   const latest=await cloud.client.from('shared_documents').select('revision').eq('document_key','field_data').maybeSingle();
+   if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウド上の現場データが見つかりません');
+   const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:restored,p_expected_revision:Number(latest.data.revision)});
+   if(!error){const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウドの保存結果を確認できません');fieldCloudRevision=Number(row.revision);saved=true;break;}
+   lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
+   await new Promise(resolve=>setTimeout(resolve,Math.min(350*Math.pow(2,attempt),3000)));
+  }
+  if(!saved)throw lastError||Error('他端末の更新が続いているため完全復元できませんでした');
+  db=cloneFieldData(restored);fieldCloudBaseData=cloneFieldData(restored);fieldCloudReady=true;
+  localStorage.setItem(key,JSON.stringify(restored));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+  localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(restored));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
+  localStorage.setItem('koujiFieldLastSyncAt_v1',String(Date.now()));
+  updateFieldSyncState('バックアップファイルの内容で完全復元済み');
+  render();status.textContent='完全復元が完了しました。端末とクラウドのデータをバックアップ時点の内容に置き換えました。';
+ }catch(e){status.textContent='完全復元できませんでした：'+(e.message||e);alert('完全復元できませんでした。現在のデータは置き換えていません。\n'+(e.message||e));}
+ finally{event.target.value='';}
 });
 function runWeeklyFieldBackup(){const shouldRun=()=>{const last=Number(localStorage.getItem(FIELD_BACKUP_LAST_KEY)||0);return !last||Date.now()-last>=7*24*60*60*1000;};if(shouldRun())setTimeout(()=>{if(shouldRun())downloadFieldBackup(true);},1800);}
 
