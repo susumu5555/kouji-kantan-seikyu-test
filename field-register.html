@@ -55,10 +55,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 .event-type{font-size:11px;border-radius:20px;background:#eaf1f5;color:#245b78;padding:4px 8px;white-space:nowrap}
 @media(max-width:420px){.calendar-day{min-height:56px}.calendar-day .event-count{font-size:9px}.calendar-grid{gap:3px}}
 
-@media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
+.schedule-date-time{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:10px}
+.schedule-content-field{margin-top:14px}
+#pScheduleContent{min-height:104px;resize:vertical}
+@media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v192</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v193</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -71,8 +74,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
-<label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div>
-<div class="row"><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div><div><label for="pScheduleContent">予定内容</label><input id="pScheduleContent" placeholder="作業内容・持参品など"></div></div>
+<div class="schedule-date-time"><div><label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div></div><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div></div>
+<div class="schedule-content-field"><label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="3" placeholder="作業内容・持参品など"></textarea></div>
 <div class="small">工事施工日を入力すると、開始時刻・予定内容と一緒に工事予定カレンダーへ登録されます。</div>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
 </div>
