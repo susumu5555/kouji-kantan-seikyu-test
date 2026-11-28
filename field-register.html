@@ -62,9 +62,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v214</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v215</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="danger" id="resetAllTestDataButton">バックアップ後に全員分を初期化</button><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
+<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="testBackupPermissionButton">バックアップ保存テスト（データ削除なし）</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px">バックアップ後に全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
 
 <section id="register" class="page hidden">
 
@@ -209,6 +209,24 @@ document.getElementById('manualFieldSyncButton')?.addEventListener('click',async
  button.disabled=true;button.textContent='同期中…';
  try{await syncFieldCloud('手動同期');}
  finally{button.disabled=false;button.textContent='今すぐクラウド同期';}
+});
+document.getElementById('testBackupPermissionButton')?.addEventListener('click',async()=>{
+ const button=document.getElementById('testBackupPermissionButton'),status=document.getElementById('backupPermissionTestStatus');
+ if(button.disabled)return;button.disabled=true;status.textContent='保存・削除権限を確認しています。共有データには触れません…';
+ let probePath=null,uploadSucceeded=false;
+ try{
+  const cloud=await window.KoujiCloudReady;if(!cloud?.ready||!cloud.user?.id)throw Error('共有クラウドへログインしてください');
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-')+'-'+Math.random().toString(36).slice(2,7);
+  probePath=cloud.user.id+'/reset-backups/permission-test-'+stamp+'.txt';
+  const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(probePath,new Blob(['permission test only'],{type:'text/plain'}),{contentType:'text/plain',upsert:false});
+  if(uploadError)throw Error('アップロード不可：'+uploadError.message);
+  uploadSucceeded=true;
+  const {error:removeError}=await cloud.client.storage.from('field-pdfs').remove([probePath]);
+  if(removeError)throw Error('アップロード成功・テストファイル削除失敗：'+removeError.message+'。テストファイルの保存先：'+probePath);
+  status.textContent='成功：field-pdfsへtext/plainファイルをアップロードし、削除できました。共有データ・既存PDF・現場情報は変更していません。';
+ }catch(e){
+  status.textContent='テスト結果：'+(e.message||e)+'\\n共有データ・既存PDF・現場情報は変更していません。'+(uploadSucceeded&&probePath?'\\nテストファイル：'+probePath:'');
+ }finally{button.disabled=false;}
 });
 document.getElementById('resetAllTestDataButton')?.addEventListener('click',async()=>{
  const button=document.getElementById('resetAllTestDataButton'),status=document.getElementById('resetAllTestDataStatus');
