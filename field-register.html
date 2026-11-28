@@ -278,7 +278,12 @@ let projectPage=1;
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
- const sorted=[...db.projects].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+ const showCompleted=new URLSearchParams(location.search).get('page')==='completed';
+ const sorted=[...db.projects].filter(p=>Boolean(p.completed)===showCompleted).sort((a,b)=>{
+  const ad=showCompleted?(a.completedDate||a.completedAt||a.createdAt):(a.createdAt);
+  const bd=showCompleted?(b.completedDate||b.completedAt||b.createdAt):(b.createdAt);
+  return (bd||'').localeCompare(ad||'');
+ });
  const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address,p.assignee].some(x=>(x||'').toLowerCase().includes(q))):sorted;
  const total=filtered.length;
  const pageCount=Math.max(1,Math.ceil(total/PROJECTS_PER_PAGE));
@@ -286,9 +291,10 @@ function renderProjects(){
  if(projectPage<1)projectPage=1;
  const from=(projectPage-1)*PROJECTS_PER_PAGE;
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
- const showCompleted=new URLSearchParams(location.search).get('page')==='completed';
- const visibleItems=pageItems.filter(p=>Boolean(p.completed)===showCompleted);
- $('projectList').innerHTML=visibleItems.length?visibleItems.map(p=>`<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
+ $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
+  const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
+ }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
 }
