@@ -58,9 +58,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v152</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v153</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-
+<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div></section>
 
 <section id="register" class="page hidden">
 
@@ -166,6 +166,9 @@ $('pZipSearch').onclick=()=>{
 let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimensions":[],"schedules":[]}');
 if(!Array.isArray(db.pdfs))db.pdfs=[];
 let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false,fieldCloudBaseData=null;
+let fieldSyncDiagnostics={status:'確認中',localRevision:0,cloudRevision:null,localCounts:null,cloudCounts:null,backupKey:null};
+const fieldDataCounts=data=>({projects:Array.isArray(data?.projects)?data.projects.length:0,visits:Array.isArray(data?.visits)?data.visits.length:0,dimensions:Array.isArray(data?.dimensions)?data.dimensions.length:0,schedules:Array.isArray(data?.schedules)?data.schedules.length:0,pdfs:Array.isArray(data?.pdfs)?data.pdfs.length:0});
+function renderFieldSyncDiagnostics(){const el=document.getElementById('syncDiagnosticsContent');if(!el)return;const d=fieldSyncDiagnostics;const fmt=x=>x?'現場 '+x.projects+'件／訪問 '+x.visits+'件／寸法 '+x.dimensions+'件／予定 '+x.schedules+'件／PDF '+x.pdfs+'件':'未取得';el.textContent='状態：'+d.status+'\n端末：revision '+d.localRevision+'\n'+fmt(d.localCounts)+'\nクラウド：revision '+(d.cloudRevision===null?'未取得':d.cloudRevision)+'\n'+fmt(d.cloudCounts)+(d.backupKey?'\n端末データ退避先：'+d.backupKey:'');}
 const cloneFieldData=value=>JSON.parse(JSON.stringify(value));
 function rebaseFieldChanges(base,local,remote){
  const merged={...remote};
@@ -248,6 +251,7 @@ async function initializeFieldCloud(){
   if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します');
  }
  const localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
+ fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.localCounts=fieldDataCounts(localData);
  if(!localData||typeof localData!=='object'||!Array.isArray(localData.projects)||!Array.isArray(localData.visits)||!Array.isArray(localData.dimensions)||!Array.isArray(localData.schedules))throw Error('端末側データの形式が不正です。データは変更せず停止しました');
  if(!Array.isArray(localData.pdfs))localData.pdfs=[];
  let docResult=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
@@ -262,22 +266,21 @@ async function initializeFieldCloud(){
   let cloudData=docResult.data.payload;
   if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
   if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
-  const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);
+  const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);
   if(localRevision>Number(docResult.data.revision)){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
-   const countData=data=>({projects:data.projects.length,visits:data.visits.length,dimensions:data.dimensions.length,schedules:data.schedules.length,pdfs:(data.pdfs||[]).length});
-   const localCounts=countData(localData),cloudCounts=countData(cloudData);
-   throw Error('端末側の更新番号がクラウドより新しいため、安全のため自動同期を停止しました。データは変更していません。\n端末: revision '+localRevision+' / 現場 '+localCounts.projects+'件・訪問 '+localCounts.visits+'件・寸法 '+localCounts.dimensions+'件・予定 '+localCounts.schedules+'件・PDF '+localCounts.pdfs+'件\nクラウド: revision '+Number(docResult.data.revision)+' / 現場 '+cloudCounts.projects+'件・訪問 '+cloudCounts.visits+'件・寸法 '+cloudCounts.dimensions+'件・予定 '+cloudCounts.schedules+'件・PDF '+cloudCounts.pdfs+'件\n端末データの退避先: '+backupKey);
+   fieldSyncDiagnostics.status='端末データの更新番号がクラウドより新しいため同期を保留（端末データ退避済み）';fieldSyncDiagnostics.backupKey=backupKey;db=cloudData;fieldCloudRevision=Number(docResult.data.revision);fieldCloudBaseData=cloneFieldData(cloudData);fieldCloudReady=false;renderFieldSyncDiagnostics();return fieldCloudRevision;
   }else{
-   db=cloudData;fieldCloudRevision=Number(docResult.data.revision);
+   db=cloudData;fieldCloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.status=fieldSyncDiagnostics.localRevision===fieldCloudRevision?'端末とクラウドの更新番号は一致':'クラウドから最新データを読み込み';
   }
  }
  localStorage.setItem(key,JSON.stringify(db));
  fieldCloudBaseData=cloneFieldData(db);
  localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
  fieldCloudReady=true;
+ fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);if(fieldSyncDiagnostics.status==='確認中')fieldSyncDiagnostics.status='クラウド同期済み';renderFieldSyncDiagnostics();
  return fieldCloudRevision;
 }
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -649,5 +652,5 @@ async function processPhotoPdfReturn(){
  await showFieldRecoveryIfNeeded();
  if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
  await processPhotoPdfReturn();
-}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
+}catch(e){fieldSyncDiagnostics.status='同期エラー：'+(e.message||e);renderFieldSyncDiagnostics();alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
 </script></body></html>
