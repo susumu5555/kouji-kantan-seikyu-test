@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v191</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v192</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -72,15 +72,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
 <label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div>
+<div class="row"><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div><div><label for="pScheduleContent">予定内容</label><input id="pScheduleContent" placeholder="作業内容・持参品など"></div></div>
+<div class="small">工事施工日を入力すると、開始時刻・予定内容と一緒に工事予定カレンダーへ登録されます。</div>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
-</div>
-<div class="panel">
-<h2>工事予定を登録</h2>
-<label>現場</label><select id="sProject"></select>
-<div class="row"><div><label>予定日 *</label><input id="sDate" type="date"></div><div><label>開始時刻</label><input id="sTime" type="time"></div></div>
-<label>予定区分</label><select id="sType"><option>現地調査</option><option>工事</option><option>修理</option><option>再訪問</option><option>その他</option></select>
-<label>予定内容</label><textarea id="sContent" placeholder="作業内容・持参品など"></textarea>
-<div class="actions"><button class="primary" id="saveSchedule">予定を登録</button></div>
 </div>
 </section>
 
@@ -512,7 +506,7 @@ async function downloadFieldBackup(auto=false){
  try{
   if(status)status.textContent='写真PDFの実ファイルを集めています。画面を閉じないでください。';
   const pdfFiles=await collectPdfBackupFiles();
-  const backup={format:'kouji-field-backup',version:2,createdAt:new Date().toISOString(),appVersion:'v191',data:cloneFieldData(db),pdfFiles};
+  const backup={format:'kouji-field-backup',version:2,createdAt:new Date().toISOString(),appVersion:'v192',data:cloneFieldData(db),pdfFiles};
   const blob=new Blob([JSON.stringify(backup)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date(),stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');
   a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   if(auto)localStorage.setItem(FIELD_BACKUP_LAST_KEY,String(Date.now()));
@@ -595,7 +589,7 @@ if(['register','cases','schedule','ledger'].includes(pageToShow)){document.getEl
 else{location.replace('./');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
-$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){const createdAt=new Date().toISOString();record={id:id(),createdAt,managementNo:nextProjectManagementNo(db.projects,createdAt)};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
+$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;let isNew=!record;if(!record){const createdAt=new Date().toISOString();record={id:id(),createdAt,managementNo:nextProjectManagementNo(db.projects,createdAt)};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value});if(isNew&&$('pWorkDate').value){db.schedules=db.schedules||[];db.schedules.push({id:id(),createdAt:new Date().toISOString(),projectId:record.id,date:$('pWorkDate').value,time:$('pScheduleTime').value,type:'工事',content:$('pScheduleContent').value.trim()});}button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate','pScheduleTime','pScheduleContent'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
 window.toggleCompleted=function(pid){
  const project=db.projects.find(x=>x.id===pid);if(!project)return;
  if(project.completed){
