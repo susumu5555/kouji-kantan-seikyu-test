@@ -166,31 +166,70 @@ let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimens
 if(!Array.isArray(db.pdfs))db.pdfs=[];
 let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false;
 const save=()=>{const snapshot=JSON.stringify(db);localStorage.setItem(key,snapshot);if(!fieldCloudReady)return;fieldCloudQueue=fieldCloudQueue.catch(()=>{}).then(async()=>{const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:JSON.parse(snapshot),p_expected_revision:fieldCloudRevision});if(error)throw error;const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');fieldCloudRevision=Number(row.revision);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));}).catch(err=>{console.error('Field cloud save failed',err);alert('端末には保存しましたが、現場データのクラウド同期に失敗しました。別端末にはまだ反映されていません。\\n'+(err.message||err));throw err});return fieldCloudQueue};
-async function initializeFieldCloud(){if(!window.KoujiCloudReady)throw Error('共有ログイン機能を読み込めません。再読み込みしてください');const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');const {data:doc,error}=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();if(error)throw error;const raw=localStorage.getItem(key);if(raw&&!localStorage.getItem('koujiFieldData_preCloud_v1')){localStorage.setItem('koujiFieldData_preCloud_v1',raw);if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します')}if(doc){
- const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);
- const cloudData=doc.payload;
- if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
- if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
- if(localRevision>Number(doc.revision)){
-  const localData=JSON.parse(raw||'null');
-  if(!localData||typeof localData!=='object')throw Error('端末側データを読み取れません。上書きせず停止しました');
-  const backupKey='koujiFieldData_revisionConflict_'+Date.now();
-  localStorage.setItem(backupKey,JSON.stringify(localData));
-  const merged={...cloudData};
-  ['projects','visits','dimensions','schedules','pdfs'].forEach(k=>{
-   const remote=Array.isArray(cloudData[k])?cloudData[k]:[];
-   const local=Array.isArray(localData[k])?localData[k]:[];
-   const seen=new Set(remote.map(x=>x&&x.id).filter(Boolean));
-   merged[k]=remote.concat(local.filter(x=>x&&x.id&&!seen.has(x.id)));
-  });
-  const {data:recovered,error:recoveryError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(doc.revision)});
-  if(recoveryError)throw Error('同期番号のずれを検出しました。端末データの退避は完了しましたが、クラウドへの再同期は未完了です：'+recoveryError.message);
-  const recoveredRow=Array.isArray(recovered)?recovered[0]:recovered;
-  if(!recoveredRow?.revision)throw Error('同期番号の再確認ができません。端末データは退避済みです');
-  db=merged;fieldCloudRevision=Number(recoveredRow.revision);
- }else{db=cloudData;fieldCloudRevision=Number(doc.revision)}
+async function initializeFieldCloud(){
+ if(!window.KoujiCloudReady)throw Error('共有ログイン機能を読み込めません。再読み込みしてください');
+ const cloud=await window.KoujiCloudReady;
+ if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+ const raw=localStorage.getItem(key);
+ if(raw&&!localStorage.getItem('koujiFieldData_preCloud_v1')){
+  localStorage.setItem('koujiFieldData_preCloud_v1',raw);
+  if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します');
+ }
+ const localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
+ if(!localData||typeof localData!=='object'||!Array.isArray(localData.projects)||!Array.isArray(localData.visits)||!Array.isArray(localData.dimensions)||!Array.isArray(localData.schedules))throw Error('端末側データの形式が不正です。データは変更せず停止しました');
+ if(!Array.isArray(localData.pdfs))localData.pdfs=[];
+ let docResult=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+ if(docResult.error)throw docResult.error;
+ if(!docResult.data){
+  const {data:created,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:localData,p_expected_revision:0});
+  if(error)throw error;
+  const row=Array.isArray(created)?created[0]:created;
+  if(!row?.revision)throw Error('現場データの初回登録結果を確認できません');
+  db=localData;fieldCloudRevision=Number(row.revision);
+ }else{
+  let cloudData=docResult.data.payload;
+  if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
+  if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
+  const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);
+  if(localRevision>Number(docResult.data.revision)){
+   const backupKey='koujiFieldData_revisionConflict_'+Date.now();
+   localStorage.setItem(backupKey,JSON.stringify(localData));
+   if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
+   let merged;
+   let saved=false;
+   for(let attempt=0;attempt<5;attempt++){
+    const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+    if(latest.error)throw latest.error;
+    if(!latest.data)throw Error('クラウドの現場データが見つかりません。端末データは退避済みです');
+    const remote=latest.data.payload;
+    if(!remote||typeof remote!=='object'||!Array.isArray(remote.projects)||!Array.isArray(remote.visits)||!Array.isArray(remote.dimensions)||!Array.isArray(remote.schedules))throw Error('最新のクラウドデータ形式が不正です。端末データは退避済みです');
+    if(!Array.isArray(remote.pdfs))remote.pdfs=[];
+    merged={...remote};
+    ['projects','visits','dimensions','schedules','pdfs'].forEach(k=>{
+     const remoteItems=Array.isArray(remote[k])?remote[k]:[];
+     const localItems=Array.isArray(localData[k])?localData[k]:[];
+     const seen=new Set(remoteItems.map(x=>x&&x.id).filter(Boolean));
+     merged[k]=remoteItems.concat(localItems.filter(x=>x&&x.id&&!seen.has(x.id)));
+    });
+    const {data:recovered,error:recoveryError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});
+    if(!recoveryError){
+     const recoveredRow=Array.isArray(recovered)?recovered[0]:recovered;
+     if(!recoveredRow?.revision)throw Error('再同期の保存結果を確認できません。端末データは退避済みです');
+     fieldCloudRevision=Number(recoveredRow.revision);saved=true;break;
+    }
+    if(!String(recoveryError.message||recoveryError).includes('revision_conflict'))throw Error('クラウドへの再同期に失敗しました：'+(recoveryError.message||recoveryError));
+   }
+   if(!saved)throw Error('複数端末で同時に更新されています。端末データは退避済みです。少し待って再読み込みしてください');
+   db=merged;
+  }else{
+   db=cloudData;fieldCloudRevision=Number(docResult.data.revision);
+  }
+ }
  localStorage.setItem(key,JSON.stringify(db));
-}else{const {data:result,error:saveError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:db,p_expected_revision:0});if(saveError)throw saveError;const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('現場データの初回登録結果を確認できません');fieldCloudRevision=Number(row.revision)}localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;return fieldCloudRevision}
+ localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+ fieldCloudReady=true;
+ return fieldCloudRevision;
+}
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 $('pWorkDate').addEventListener('change',()=>{const v=$('pWorkDate').value;if(v){const y=v.split('-')[0];if(y.length!==4||Number(y)<1||Number(y)>9999){$('pWorkDate').setCustomValidity('工事施工日の年は西暦4桁で入力してください。');$('pWorkDate').reportValidity();$('pWorkDate').value='';}else{$('pWorkDate').setCustomValidity('');}}});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
