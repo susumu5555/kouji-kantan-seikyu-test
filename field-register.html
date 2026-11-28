@@ -268,28 +268,56 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
 async function mergeFieldDataSafely(){
  const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
  const keys=['projects','visits','dimensions','schedules','pdfs'];
+ const stableJson=v=>{
+  if(v===undefined)return '"[undefined]"';
+  if(v===null||typeof v!=='object')return JSON.stringify(v);
+  if(Array.isArray(v))return '['+v.map(stableJson).join(',')+']';
+  return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableJson(v[k])).join(',')+'}';
+ };
  const buildMerge=(local,remote)=>{
-  const merged={...remote},conflicts=[];
-  for(const k of keys){
-   const a=Array.isArray(local[k])?local[k]:[],b=Array.isArray(remote[k])?remote[k]:[];
-   const map=new Map(b.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));
-   for(const item of a){
-    if(!item||item.id==null)throw Error(k+'にIDのないデータがあるため停止しました');
-    const id=String(item.id),old=map.get(id);
-    if(old&&JSON.stringify(old)!==JSON.stringify(item))conflicts.push(k+'/'+id);
-    else if(!old)map.set(id,item);
+  const merged={...remote},conflicts=[],projectIdMap=new Map();
+  const remoteProjects=new Map((remote.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
+  const projectMap=new Map((remote.projects||[]).filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
+  for(const item of (local.projects||[])){
+   if(!item||item.id==null)throw Error('現場にIDがないため統合を停止しました');
+   const id0=String(item.id),old=projectMap.get(id0);
+   if(!old)projectMap.set(id0,item);
+   else if(stableJson(old)!==stableJson(item)){
+    const newId=id();
+    projectIdMap.set(id0,newId);
+    projectMap.set(newId,{...item,id:newId});
+    conflicts.push('同じIDの別現場を分離：'+(item.name||'名称未設定')+'（新ID '+newId+'）');
+   }
+  }
+  merged.projects=Array.from(projectMap.values());
+  for(const k of ['visits','dimensions','schedules']){
+   const remoteItems=Array.isArray(remote[k])?remote[k]:[],localItems=Array.isArray(local[k])?local[k]:[];
+   const map=new Map(remoteItems.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
+   for(const item0 of localItems){
+    if(!item0||item0.id==null)throw Error(k+'にIDのないデータがあるため停止しました');
+    const item=projectIdMap.has(String(item0.projectId))?{...item0,projectId:projectIdMap.get(String(item0.projectId))}:item0;
+    const old=map.get(String(item.id));
+    if(!old)map.set(String(item.id),item);
+    else if(stableJson(old)!==stableJson(item)){
+     if(!projectIdMap.has(String(item0.projectId)))throw Error(k+'に同じIDで内容が異なるデータがあります。自動統合を停止しました：'+item.id);
+     const cloned={...item,id:id()};map.set(String(cloned.id),cloned);
+    }
    }
    merged[k]=Array.from(map.values());
   }
-  return {merged,conflicts};
+  const localPdfs=Array.isArray(local.pdfs)?local.pdfs:[],remotePdfs=Array.isArray(remote.pdfs)?remote.pdfs:[];
+  if(localPdfs.some(x=>projectIdMap.has(String(x?.projectId))))throw Error('別現場として分離する現場にPDFが紐づいています。PDF本体の保存先も確認する必要があるため、PDFを含む自動統合は停止しました。現場データは変更していません');
+  const pdfMap=new Map(remotePdfs.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
+  for(const item of localPdfs){if(!item||item.id==null)throw Error('PDFにIDがないため停止しました');const old=pdfMap.get(String(item.id));if(old&&stableJson(old)!==stableJson(item))throw Error('同じPDF IDで内容が異なるため停止しました：'+item.id);if(!old)pdfMap.set(String(item.id),item);}
+  merged.pdfs=Array.from(pdfMap.values());
+  return {merged,conflicts,projectIdMap};
  };
  let latest=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
  if(latest.error)throw latest.error;if(!latest.data?.payload)throw Error('最新クラウドデータを取得できません');
- const local=cloneFieldData(db);
- let built=buildMerge(local,latest.data.payload);
- if(built.conflicts.length)throw Error('同じIDで内容が異なるデータがあります。自動統合を停止しました：'+built.conflicts.slice(0,5).join('、'));
+ const local=cloneFieldData(db);let built=buildMerge(local,latest.data.payload);
  const summary=()=>keys.map(k=>k+'：端末 '+(local[k]||[]).length+'件／クラウド '+(latest.data.payload[k]||[]).length+'件 → 統合 '+built.merged[k].length+'件').join('\n');
- if(!confirm('端末とクラウドの不足データを統合します。\n'+summary()+'\n既存データは削除しません。続けますか？'))return false;
+ const extra=built.conflicts.length?'\n\n同じIDで内容が異なる現場は、別の新IDを付けて両方残します。関連する訪問履歴・寸法・予定も新しい現場IDに付け替えます。':'';
+ if(!confirm('端末とクラウドの不足データを統合します。\n'+summary()+extra+'\n既存データは削除しません。続けますか？'))return false;
  let saved=null;
  for(let attempt=0;attempt<3;attempt++){
   saved=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:built.merged,p_expected_revision:Number(latest.data.revision)});
@@ -299,7 +327,6 @@ async function mergeFieldDataSafely(){
   latest=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
   if(latest.error)throw latest.error;if(!latest.data?.payload)throw Error('競合後の最新クラウドデータを取得できません');
   built=buildMerge(local,latest.data.payload);
-  if(built.conflicts.length)throw Error('クラウド更新後に同じIDで内容差が見つかったため停止しました：'+built.conflicts.slice(0,5).join('、'));
   if(!confirm('統合中にクラウドが更新されました。最新データを再取得しました。\n'+summary()+'\n既存データを削除せず、もう一度統合を試しますか？'))return false;
  }
  if(saved?.error)throw saved.error;
