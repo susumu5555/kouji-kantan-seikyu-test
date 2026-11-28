@@ -24,7 +24,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </style>
 </head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v190</span></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><span class="build-version">開発版 v191</span></div></header>
 <main>
 <button class="new" type="button" data-feature="現場登録">＋ 現場登録</button>
 <section class="grid" aria-label="メニュー">
@@ -64,22 +64,7 @@ homeRestoreInput?.addEventListener('change',async event=>{
 document.querySelectorAll('[data-feature]').forEach(button=>{
   button.addEventListener('click',()=>{
     const feature=button.dataset.feature;
-    if(feature==='バックアップ'){
-      try{
-        const raw=localStorage.getItem('genbaThreeModule_v1');
-        if(!raw){alert('このブラウザーに現場データがありません。共有設定でログインし、同期完了後にもう一度お試しください。');return;}
-        const data=JSON.parse(raw);
-        if(!data||!Array.isArray(data.projects)){alert('現場データを読み取れませんでした。');return;}
-        const now=new Date(),stamp=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('');
-        const backup={format:'kouji-field-backup',version:1,createdAt:now.toISOString(),appVersion:'v190',data};
-        const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
-        const url=URL.createObjectURL(blob),a=document.createElement('a');
-        a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url),60000);
-        localStorage.setItem('koujiFieldAutoBackupLastAt_v1',String(now.getTime()));
-        return;
-      }catch(error){alert('バックアップを作成できませんでした：'+(error.message||error));return;}
-    }
+    if(feature==='バックアップ'){location.href='./field-register.html?page=cases&backupAction=backup';return;}
     const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?list=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html','復元':'#open-restore-picker'};
     if(routes[feature]){location.href=routes[feature];return;}
     alert('この機能は現在利用できません。');
