@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v163</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v164</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -299,7 +299,7 @@ async function initializeFieldCloud(){
   if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
   if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
   const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);
-  if(localRevision>Number(docResult.data.revision)){
+  if(localRevision>Number(docResult.data.revision)&&!hasPendingLocal){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
