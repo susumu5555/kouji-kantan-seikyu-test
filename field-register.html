@@ -854,7 +854,7 @@ function renderSelectedDay(){
 }
 $('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
-$('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
+
 function renderUndecidedProjects(){
  const box=$('undecidedProjectsPanel');if(!box)return;
  const items=(db.projects||[]).filter(p=>!p.completed&&!p.workDate).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
