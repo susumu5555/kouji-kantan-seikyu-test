@@ -53,7 +53,27 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 #schedule .calendar-day.selected{background:#e7f1f8}
 #schedule .calendar-day .event-count{display:none}
 #schedule .calendar-day:after{display:none}
-#schedule .calendar-event-chip{display:block;background:#eaf3f9;border-left:3px solid #2879ad;border-radius:5px;padding:4px 5px;font-size:11px;line-height:1.35;color:#173f59;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#schedule .calendar-event-chip{display:block;background:#eaf3f9;border-left:4px solid #2879ad;border-radius:6px;padding:5px 6px;font-size:11px;line-height:1.35;color:#173f59;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:650;box-shadow:0 1px 2px rgba(20,45,60,.08)}
+#schedule .calendar-event-chip.type-work{background:#e1efff;border-left-color:#2878c8;color:#174d83}
+#schedule .calendar-event-chip.type-survey{background:#e6f5e9;border-left-color:#299653;color:#1b6538}
+#schedule .calendar-event-chip.type-repair{background:#fff0e2;border-left-color:#e27b25;color:#91440d}
+#schedule .calendar-event-chip.type-revisit{background:#f1eaff;border-left-color:#8554c7;color:#57318d}
+#schedule .calendar-event-chip.type-other{background:#fff7d9;border-left-color:#c69a19;color:#765b08}
+#schedule .event-type.type-work{background:#dcecff;color:#174d83}
+#schedule .event-type.type-survey{background:#dff2e4;color:#1b6538}
+#schedule .event-type.type-repair{background:#ffead8;color:#91440d}
+#schedule .event-type.type-revisit{background:#eee4ff;color:#57318d}
+#schedule .event-type.type-other{background:#fff2c2;color:#765b08}
+#schedule .calendar-day.has-events{border-color:#9dbbd0;background:#fbfdff}
+#schedule .calendar-day.selected.has-events{background:#e7f1f8}
+#schedule .calendar-color-legend{display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:10px;font-size:11px;color:#52636e}
+#schedule .calendar-color-legend span{display:inline-flex;align-items:center;gap:5px}
+#schedule .calendar-color-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+#schedule .calendar-color-legend .work{background:#2878c8}
+#schedule .calendar-color-legend .survey{background:#299653}
+#schedule .calendar-color-legend .repair{background:#e27b25}
+#schedule .calendar-color-legend .revisit{background:#8554c7}
+#schedule .calendar-color-legend .other{background:#c69a19}
 #schedule .calendar-event-chip strong{font-size:11px}
 #schedule .calendar-more{font-size:10px;color:#245b78;font-weight:700;padding:1px 4px}
 #schedule .calendar-day.has-events{border-color:#a9c7da}
@@ -103,7 +123,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v200</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v201</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -166,6 +186,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 </div>
 <div class="calendar-grid" id="calendarGrid"></div>
 <div class="calendar-legend"><span><i></i>予定あり</span><span>青枠：今日</span><span>薄青：選択日</span></div>
+<div class="calendar-color-legend"><span><i class="work"></i>工事</span><span><i class="survey"></i>現地調査</span><span><i class="repair"></i>修理</span><span><i class="revisit"></i>再訪問</span><span><i class="other"></i>その他</span></div>
 <div class="actions"><button class="secondary" id="calendarToday" type="button">今日に戻る</button></div>
 </div>
 <div class="panel">
@@ -784,6 +805,7 @@ let calendarMonth=new Date();calendarMonth=new Date(calendarMonth.getFullYear(),
 let selectedCalendarDate=new Date().toISOString().slice(0,10);
 const pad2=n=>String(n).padStart(2,'0');
 const dateKey=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+function scheduleTypeClass(type){if(type==='工事')return 'type-work';if(type==='現地調査')return 'type-survey';if(type==='修理')return 'type-repair';if(type==='再訪問')return 'type-revisit';return 'type-other';}
 function renderCalendar(){
  const year=calendarMonth.getFullYear(),month=calendarMonth.getMonth();
  $('calendarMonth').textContent=year+'年'+(month+1)+'月';
@@ -800,7 +822,7 @@ function renderCalendar(){
   if(keyDate===dateKey(new Date()))classes.push('today');
   if(keyDate===selectedCalendarDate)classes.push('selected');
   if(count)classes.push('has-events');
-  const chips=dayEvents.slice(0,3).map(ev=>'<span class="calendar-event-chip"><strong>'+esc(ev.time||'時刻未定')+'</strong> '+esc(projectName(ev.projectId))+(ev.content?'｜'+esc(ev.content):'')+'</span>').join('');
+  const chips=dayEvents.slice(0,3).map(ev=>'<span class="calendar-event-chip '+scheduleTypeClass(ev.type)+'"><strong>'+esc(ev.time||'時刻未定')+'</strong> '+esc(projectName(ev.projectId))+(ev.content?'｜'+esc(ev.content):'')+'</span>').join('');
   const more=count>3?'<span class="calendar-more">＋'+(count-3)+'件</span>':'';
   html+='<button type="button" class="'+classes.join(' ')+'" data-calendar-date="'+keyDate+'"><span class="daynum">'+d.getDate()+'</span>'+chips+more+'</button>';
  }
@@ -811,7 +833,7 @@ function renderSelectedDay(){
  const d=new Date(selectedCalendarDate+'T00:00:00');
  $('selectedDateHeading').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）の予定';
  const a=db.schedules.filter(x=>x.date===selectedCalendarDate).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
- $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
+ $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type '+scheduleTypeClass(x.type)+'">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
 }
 $('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
