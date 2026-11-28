@@ -22,8 +22,9 @@ textarea{min-height:76px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 button.primary,.action{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700}
 button.secondary{background:#e8eef1;color:var(--navy);border:0;border-radius:10px;padding:11px 14px;font-weight:650}
-#pZipSearch{background:var(--navy);color:#fff;border:0;border-radius:10px;padding:12px 14px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.12)}
-#pZipSearch:disabled{opacity:.65;cursor:wait}
+#pZipSearch{background:#e8eef1;color:#84919a;border:0;border-radius:10px;padding:12px 14px;font-weight:700;box-shadow:none;transition:background .15s,color .15s,box-shadow .15s}
+#pZipSearch.is-ready{background:var(--navy);color:#fff;box-shadow:0 2px 5px rgba(0,0,0,.12)}
+#pZipSearch:disabled{cursor:not-allowed;opacity:1}
 button.danger{background:#fff0ef;color:#a3342b;border:1px solid #f0cbc7;border-radius:9px;padding:8px 11px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:9px 0}
@@ -65,7 +66,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div class="panel">
 <h2>新規登録</h2>
 <div class="row"><div><label>現場名 *</label><input id="pName" placeholder="例：山田様 エアコン取付"></div><div><label>顧客名</label><input id="pCustomer" placeholder="例：山田様"></div></div>
-<div class="row"><div><label for="pZip">郵便番号</label><input id="pZip" inputmode="numeric" maxlength="8" autocomplete="postal-code" placeholder="例：812-0011"></div><div style="display:flex;align-items:end"><button class="secondary" id="pZipSearch" type="button" style="width:100%">住所を自動入力</button></div></div>
+<div class="row"><div><label for="pZip">郵便番号</label><input id="pZip" inputmode="numeric" pattern="[0-9]{7}" maxlength="7" autocomplete="postal-code" placeholder="郵便番号7桁"></div><div style="display:flex;align-items:end"><button class="secondary" id="pZipSearch" type="button" style="width:100%" disabled>住所を自動入力</button></div></div>
 <div id="pZipStatus" class="small" role="status" aria-live="polite"></div>
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
@@ -140,13 +141,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 const $=id=>document.getElementById(id), key='genbaThreeModule_v1';
 const prefectures=['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
 prefectures.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;$('pPref').appendChild(o)});
+const updateZipButton=()=>{const ready=/^\\d{7}$/.test($('pZip').value);$('pZipSearch').disabled=!ready;$('pZipSearch').classList.toggle('is-ready',ready);};
+$('pZip').addEventListener('input',()=>{const cleaned=$('pZip').value.replace(/\\D/g,'').slice(0,7);if($('pZip').value!==cleaned)$('pZip').value=cleaned;$('pPref').classList.remove('auto-filled');$('pAddress').classList.remove('auto-filled');updateZipButton();});
+updateZipButton();
 $('pZipSearch').onclick=()=>{
  const zip=$('pZip').value.replace(/[^0-9]/g,'');
  if(!/^\d{7}$/.test(zip)){$('pZipStatus').textContent='郵便番号は7桁で入力してください。';return}
  const button=$('pZipSearch');button.disabled=true;$('pZipStatus').textContent='住所を検索しています…';
  const cb='genbaZip_'+Date.now()+'_'+Math.floor(Math.random()*100000),script=document.createElement('script');let done=false;
  const timer=setTimeout(()=>finish(null,'検索がタイムアウトしました。時間をおいて再試行してください。'),15000);
- function finish(data,error){if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();button.disabled=false;
+ function finish(data,error){if(done)return;done=true;clearTimeout(timer);delete window[cb];script.remove();updateZipButton();
   if(error){$('pZipStatus').textContent=error;return}
   if(!data||data.status!==200){$('pZipStatus').textContent=data?.message||'住所検索に失敗しました。';return}
   if(!data.results?.length){$('pZipStatus').textContent='該当する住所がありません。住所を手入力してください。';return}
@@ -157,7 +161,7 @@ $('pZipSearch').onclick=()=>{
  script.src='https://zipcloud.ibsnet.co.jp/api/search?zipcode='+encodeURIComponent(zip)+'&callback='+encodeURIComponent(cb);document.head.appendChild(script);
 };
 ['pPref','pAddress'].forEach(id=>$(id).addEventListener('input',()=>$(id).classList.remove('auto-filled')));
-$('pZip').addEventListener('input',()=>{ $('pPref').classList.remove('auto-filled');$('pAddress').classList.remove('auto-filled'); });
+
 let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimensions":[],"schedules":[]}');
 if(!Array.isArray(db.pdfs))db.pdfs=[];
 let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false;
