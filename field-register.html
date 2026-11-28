@@ -58,9 +58,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v172</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v173</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
+<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
 <section id="register" class="page hidden">
 
@@ -212,6 +212,29 @@ document.getElementById('manualFieldSyncButton')?.addEventListener('click',async
  button.disabled=true;button.textContent='同期中…';
  try{await syncFieldCloud('手動同期');}
  finally{button.disabled=false;button.textContent='今すぐクラウド同期';}
+});
+document.getElementById('compareFieldDataButton')?.addEventListener('click',async()=>{
+ const button=document.getElementById('compareFieldDataButton'),out=document.getElementById('fieldCompareResult');
+ if(button.disabled)return;
+ button.disabled=true;button.textContent='比較中…';out.textContent='端末とクラウドのデータを読み取っています（書き込みは行いません）';
+ try{
+  const cloud=await window.KoujiCloudReady;
+  if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+  const {data,error}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
+  if(error)throw error;if(!data?.payload)throw Error('クラウドデータを取得できません');
+  const remote=data.payload,local=cloneFieldData(db),lines=['【読み取り専用の差分確認】','端末 revision：'+(localStorage.getItem('koujiFieldCloudRevision_v1')||'不明'),'クラウド revision：'+data.revision,''];
+  for(const keyName of ['projects','visits','dimensions','schedules','pdfs']){
+   const l=Array.isArray(local[keyName])?local[keyName]:[],r=Array.isArray(remote[keyName])?remote[keyName]:[];
+   const lm=new Map(l.filter(x=>x?.id!=null).map(x=>[String(x.id),x])),rm=new Map(r.filter(x=>x?.id!=null).map(x=>[String(x.id),x]));
+   let onlyLocal=0,onlyCloud=0,different=0;
+   for(const [id,item] of lm){if(!rm.has(id))onlyLocal++;else if(JSON.stringify(item)!==JSON.stringify(rm.get(id)))different++;}
+   for(const id of rm.keys())if(!lm.has(id))onlyCloud++;
+   lines.push(keyName+'：端末 '+l.length+'件／クラウド '+r.length+'件','  端末のみ '+onlyLocal+'件、クラウドのみ '+onlyCloud+'件、同じIDで内容差 '+different+'件');
+  }
+  lines.push('','この結果は比較のみです。データの統合・上書き・削除は行っていません。');
+  out.textContent=lines.join('\n');
+ }catch(err){out.textContent='比較できませんでした：'+(err.message||err);}
+ finally{button.disabled=false;button.textContent='端末・クラウドの差分を確認';}
 });
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
