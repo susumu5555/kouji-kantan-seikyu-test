@@ -419,7 +419,8 @@ window.toggleCompleted=function(pid){
  };
 };
 let projectPage=1;
-const fieldPageParams=new URLSearchParams(location.search);\nlet projectListMode=(fieldPageParams.get('list')==='completed'||fieldPageParams.get('page')==='completed')?'completed':'open';
+const fieldPageParams=new URLSearchParams(location.search);
+let projectListMode=(fieldPageParams.get('list')==='completed'||fieldPageParams.get('page')==='completed')?'completed':'open';
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
