@@ -773,8 +773,9 @@ window.changeProjectPage=function(delta){projectPage+=delta;renderProjects();win
 function loadProjectMemo(projectId){
  const project=db.projects.find(x=>x.id===projectId);
  const legacy=(db.dimensions||[]).find(x=>x.projectId===projectId&&x.memoOnly===true);
+ const scheduled=(db.schedules||[]).find(x=>x.projectId===projectId&&x.type==='工事');
  $('dMemo').value=project?.plannedMemo??legacy?.memo??'';
- $('ledgerScheduleContent').value=project?.scheduleContent||'';
+ $('ledgerScheduleContent').value=project?.scheduleContent??scheduled?.content??'';
  $('memoSaveStatus').textContent='入力すると自動保存されます。';
  $('scheduleContentSaveStatus').textContent='入力すると自動保存されます。';
 }
