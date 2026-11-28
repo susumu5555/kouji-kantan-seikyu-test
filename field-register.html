@@ -105,7 +105,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div id="selectedProjectInfo" class="item empty">現場を選択すると、現場情報がここに表示されます。</div>
 <div id="projectPdfList"></div>
 <div id="pdfSaveStatus" class="small" aria-live="polite"></div>
-<div class="actions"><button class="secondary" id="openCamera">写真を撮影（写真PDFメーカー）</button></div>
+
 
 <div class="row"><div><label>記録日</label><input id="dDate" type="date"></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
 <div class="row"><div><label>寸法・数値</label><input id="dValue" placeholder="例：3.5"></div><div><label>単位</label><select id="dUnit"><option>m</option><option>mm</option><option>cm</option><option>台</option><option>個</option><option>その他</option></select></div></div>
@@ -283,9 +283,27 @@ function fmtBytes(n){return n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n
 function renderProjectPdfs(){
  const pid=$('dProject').value,box=$('projectPdfList');
  if(!pid){box.innerHTML='';return;}
- const list=(db.pdfs||[]).filter(x=>x.projectId===pid).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
- box.innerHTML='<h3>保存済み写真PDF</h3>'+(list.length?list.map(x=>`<div class="item"><div style="flex:1"><strong>${esc(x.fileName)}</strong><div class="sub">${new Date(x.createdAt).toLocaleString('ja-JP')} ・ ${esc(x.sizeLabel)}</div></div><button class="secondary" onclick="openSavedPdf('${x.id}')">開く</button></div>`).join(''):'<div class="empty">この現場に保存された写真PDFはありません。</div>');
+ const list=(db.pdfs||[]).filter(x=>x.projectId===pid).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+ const section=(category,title,desc)=>{const items=list.filter(x=>(x.category||'unclassified')===category);
+  return `<div class="item" style="padding:14px;margin-top:12px"><h3 style="margin:0 0 5px">${title}</h3><div class="small">${desc}</div><div class="actions" style="margin:10px 0"><button class="secondary" onclick="openProjectPhotoMaker('${category}')">${title}の写真を追加</button></div>${items.length?items.map(x=>`<div class="item"><div style="flex:1"><strong>${esc(x.fileName)}</strong><div class="sub">${new Date(x.createdAt).toLocaleString('ja-JP')} ・ ${esc(x.sizeLabel)}</div></div><div class="actions"><button class="secondary" onclick="openSavedPdf('${x.id}')">開く</button><button class="danger" onclick="deleteSavedPdf('${x.id}')">削除</button></div></div>`).join(''):'<div class="empty">この区分の写真PDFはありません。</div>'}</div>`;
+ };
+ const unclassified=list.filter(x=>(x.category||'unclassified')==='unclassified');
+ box.innerHTML='<h3>保存済み写真PDF</h3>'+section('report','報告用','工事完了報告などに使用する写真PDF')+section('support','補助用','施工状況・補足資料として使用する写真PDF')+(unclassified.length?'<div class="item"><strong>分類未設定（既存PDF）</strong>'+unclassified.map(x=>`<div class="item"><strong>${esc(x.fileName)}</strong><div class="sub">${new Date(x.createdAt).toLocaleString('ja-JP')} ・ ${esc(x.sizeLabel)}</div><div class="actions"><button class="secondary" onclick="openSavedPdf('${x.id}')">開く</button><button class="danger" onclick="deleteSavedPdf('${x.id}')">削除</button></div></div>`).join('')+'</div>':'');
 }
+window.deleteSavedPdf=async function(id){
+ const meta=(db.pdfs||[]).find(x=>x.id===id);if(!meta)return alert('PDF情報が見つかりません');
+ if(!confirm('「'+meta.fileName+'」を削除しますか？\\n削除すると、この現場の共有データからも削除されます。'))return;
+ try{
+  if(meta.storagePath){
+   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません。削除は実行していません。');
+   const {error}=await cloud.client.storage.from('field-pdfs').remove([meta.storagePath]);if(error)throw error;
+  }
+  const d=await openPdfDb();
+  await new Promise((resolve,reject)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)});
+  db.pdfs=db.pdfs.filter(x=>x.id!==id);await save();renderProjectPdfs();
+  $('pdfSaveStatus').textContent='写真PDFを削除しました。';
+ }catch(e){alert('PDFを削除できませんでした：'+(e.message||e));}
+};
 window.openSavedPdf=async function(id){
  try{
   const meta=(db.pdfs||[]).find(x=>x.id===id);if(!meta)return alert('PDF情報が見つかりません');
@@ -314,7 +332,7 @@ window.addEventListener('message',async event=>{
   const storagePath=cloud.user.id+'/'+m.projectId+'/'+record.id+'.pdf';
   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,blob,{contentType:'application/pdf',upsert:false});
   if(uploadError)throw new Error('端末には保存しましたが、クラウドPDF保存に失敗しました：'+uploadError.message);
-  db.pdfs.push({id:record.id,projectId:record.projectId,fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
+  db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(m.category)?m.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
   await save();renderProjectPdfs();
   $('pdfSaveStatus').textContent='写真PDFを端末とクラウドに保存しました。他の端末からも開けます。';
   event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);
@@ -323,16 +341,15 @@ window.addEventListener('message',async event=>{
   event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);
  }
 });
-$('openCamera').onclick=()=>{
+window.openProjectPhotoMaker=(category)=>{
  const p=db.projects.find(x=>x.id===$('dProject').value);
  if(!p){alert('先に対象現場を選択してください。');return;}
+ if(!['report','support'].includes(category))return;
  const u=new URL(PHOTO_MAKER_URL);
- u.searchParams.set('projectId',p.id);u.searchParams.set('projectName',p.name);
+ u.searchParams.set('projectId',p.id);u.searchParams.set('projectName',p.name);u.searchParams.set('pdfCategory',category);
  const returnUrl=new URL(location.href);returnUrl.search='';returnUrl.searchParams.set('page','ledger');returnUrl.searchParams.set('projectId',p.id);
  u.searchParams.set('returnUrl',returnUrl.toString());
- // スマートフォンでも確実に元画面へ戻れるよう、同じタブで写真PDFメーカーを開きます。
  location.href=u.toString();
- $('pdfSaveStatus').textContent='写真PDFメーカーでPDFを作成すると、この現場へ自動保存します。';
 };
 
 async function processPhotoPdfReturn(){
@@ -350,7 +367,7 @@ async function processPhotoPdfReturn(){
    const storagePath=cloud.user.id+'/'+record.projectId+'/'+record.id+'.pdf';
    const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
    if(uploadError)throw new Error('クラウドPDF保存に失敗しました：'+uploadError.message);
-   db.pdfs.push({id:record.id,projectId:record.projectId,fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
+   db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(handoff.category)?handoff.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
    await save();
   }
   localStorage.removeItem('genbaPhotoPdfReturn_v1');
