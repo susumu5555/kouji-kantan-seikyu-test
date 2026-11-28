@@ -61,7 +61,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v197</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v198</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -88,7 +88,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <h2 id="casesTitle">未完了現場</h2>
 <h3>登録済み現場</h3>
 <p class="small">登録日の新しい順に20件ずつ表示します。21～40件目以降は「次へ」で切り替えます。</p>
-<input id="projectSearch" placeholder="現場名・顧客名・住所で検索">
+<input id="projectSearch" placeholder="管理ID・現場名・顧客名・住所で検索">
 <div id="projectList"></div>
 <div id="projectPagination" class="actions" aria-label="現場一覧ページ切替"></div>
 </div>
@@ -646,7 +646,7 @@ function renderProjects(){
   const bd=showCompleted?(b.completedDate||b.completedAt||b.createdAt):(b.createdAt);
   return (bd||'').localeCompare(ad||'');
  });
- const filtered=q?sorted.filter(p=>[p.name,p.customer,p.address,p.assignee].some(x=>(x||'').toLowerCase().includes(q))):sorted;
+ const filtered=q?sorted.filter(p=>[p.managementNo,p.name,p.customer,p.address,p.assignee].some(x=>(x||'').toString().toLowerCase().includes(q))):sorted;
  const total=filtered.length;
  const pageCount=Math.max(1,Math.ceil(total/PROJECTS_PER_PAGE));
  if(projectPage>pageCount)projectPage=pageCount;
