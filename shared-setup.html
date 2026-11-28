@@ -23,6 +23,16 @@
 <button id="inspect" class="secondary">移行前データとクラウドを確認</button><div id="preview" class="status">未確認</div>
 <div class="row"><button id="migrate" disabled>空のクラウド領域に初回登録</button></div><p id="migrationStatus" class="status">未実行</p></div>
 <div class="card"><h2>5. 現在の同期状態</h2><p>この設定ページは接続・ログイン・初回移行の準備用です。通常画面（現場登録・見積作成）へのリアルタイム同期は、アプリ本体への接続設定反映後に有効になります。</p><p class="muted">現時点で同期済みとは表示しません。既存端末のデータは移行完了・照合まで削除しないでください。</p></div>
+<div class="card"><h2>7. バックアップ・復元・容量管理</h2>
+<p class="muted">現場データのバックアップ作成、バックアップからの復元、写真PDFのクラウド保存容量の確認を行えます。</p>
+<div class="row">
+<button id="sharedBackupButton" type="button">バックアップ</button>
+<button id="sharedRestoreButton" class="secondary" type="button">復元</button>
+<button id="sharedStorageButton" class="secondary" type="button">容量管理</button>
+</div>
+<p id="sharedToolsStatus" class="status">各機能を選択してください。</p>
+<input type="file" id="sharedRestoreFile" accept=".json,application/json" hidden>
+</div>
 <div class="card"><h2>6. 同期診断・データ確認</h2><p class="muted">端末とクラウドの同期状態、保存件数、更新番号の確認や、端末・クラウド間のデータ差分の照合を行います。通常の現場一覧やカレンダーには表示せず、必要なときだけここから開けます。</p><a href="./field-register.html?admin=diagnostics" style="display:inline-block;text-decoration:none;border-radius:9px;padding:12px 16px;background:#1457a6;color:#fff;font-weight:700;margin-top:8px">同期診断を開く</a></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -33,6 +43,26 @@ let sharedLockClient=null,sharedLockBusy=false;
 document.getElementById('shared-lock-unlock').onclick=async()=>{if(sharedLockBusy||!sharedLockClient)return;sharedLockBusy=true;const b=document.getElementById('shared-lock-unlock');b.disabled=true;try{const email=document.getElementById('shared-lock-email').value.trim(),password=document.getElementById('shared-lock-password').value;if(!email||!password)throw Error('メールアドレスとパスワードを入力してください。');const {data,error}=await sharedLockClient.auth.signInWithPassword({email,password});if(error)throw error;const {data:member,error:memberError}=await sharedLockClient.from('team_members').select('user_id,display_name,role').eq('user_id',data.user.id).maybeSingle();if(memberError)throw memberError;if(!member)throw Error('このアカウントは共有メンバーに登録されていません。');document.getElementById('shared-access-lock').remove()}catch(e){lockStatus('解除できません：'+e.message,true)}finally{sharedLockBusy=false;b.disabled=false}};
 </script>
 <script>
+const sharedRestoreInput=document.getElementById('sharedRestoreFile');
+document.getElementById('sharedBackupButton').onclick=()=>{
+ const button=document.getElementById('sharedBackupButton'),status=document.getElementById('sharedToolsStatus');
+ if(document.getElementById('sharedBackupFrame'))return;
+ const frame=document.createElement('iframe');frame.id='sharedBackupFrame';frame.title='バックアップ処理';frame.setAttribute('aria-hidden','true');
+ frame.style.cssText='position:fixed;width:1px;height:1px;left:-10px;bottom:0;border:0;opacity:0;pointer-events:none';
+ frame.src='./field-register.html?page=cases&backupOnly=1';document.body.appendChild(frame);
+ button.disabled=true;status.textContent='写真PDFを含むバックアップを作成しています…';
+ const finish=event=>{if(event.origin!==location.origin||event.data?.type!=='kouji-backup-result')return;window.removeEventListener('message',finish);frame.remove();button.disabled=false;status.textContent=event.data.ok?'バックアップを作成しました。ダウンロードフォルダを確認してください。':'バックアップを作成できませんでした。ログイン状態と写真PDFの保存状態を確認してください。';};
+ window.addEventListener('message',finish);
+ setTimeout(()=>{window.removeEventListener('message',finish);if(frame.isConnected){frame.remove();button.disabled=false;status.textContent='バックアップ処理が時間内に完了しませんでした。もう一度お試しください。';}},300000);
+};
+document.getElementById('sharedRestoreButton').onclick=()=>sharedRestoreInput.click();
+sharedRestoreInput.onchange=async event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ try{const content=await file.text();JSON.parse(content);sessionStorage.setItem('koujiPendingRestoreFile_v1',content);location.href='./field-register.html?page=cases&backupAction=restorePending';}
+ catch(error){document.getElementById('sharedToolsStatus').textContent='バックアップファイルを読み取れません：'+(error.message||error);}
+ finally{event.target.value='';}
+};
+document.getElementById('sharedStorageButton').onclick=()=>{location.href='./field-register.html?page=storage';};
 const $=id=>document.getElementById(id), CONFIG_KEY='koujiSupabaseConfig_v1';
 let client=null, session=null, preview=null;
 function cfg(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'null')}catch(e){return null}}
