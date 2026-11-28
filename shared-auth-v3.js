@@ -27,8 +27,9 @@
   window.KoujiCloudReady=new Promise(resolve=>{resolveCloudReady=resolve});
   function show(){gate.style.display='flex'}
   function hide(){gate.style.display='none'}
-  const BUILTIN_CONFIG={url:'https://qprwvdizoforkcccpvzz.supabase.co',key:'sb_publishable_KzduNU1SPwvKWWzKT94yIg_4pQ-wzOh'};
-  function getConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');return saved&&saved.url&&saved.key?saved:BUILTIN_CONFIG}catch(_){return BUILTIN_CONFIG}}
+  // 接続先は共有設定画面で、このブラウザーに保存した値だけを使用する。
+  // 削除済み・旧Supabaseプロジェクトへの誤接続を防ぐため、古い固定値にはフォールバックしない。
+  function getConfig(){try{const saved=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');return saved&&saved.url&&saved.key?saved:null}catch(_){return null}}
   async function loadSdk(){
     if(window.supabase?.createClient)return;
     await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';s.onload=resolve;s.onerror=()=>reject(new Error('Supabaseライブラリを読み込めません。通信を確認してください。'));document.head.appendChild(s)});
