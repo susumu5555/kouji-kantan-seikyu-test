@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v175</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v176</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -247,9 +247,23 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
    lines.push('','差分が残っているため、同期保留を継続しています。データは変更していません。');
   }
   out.textContent=lines.join('\n');
+  const oldMerge=document.getElementById('mergeFieldDataButton');if(oldMerge)oldMerge.remove();
+  if(!allSame){const mergeButton=document.createElement('button');mergeButton.id='mergeFieldDataButton';mergeButton.type='button';mergeButton.className='primary';mergeButton.textContent='不足データを安全に統合';mergeButton.addEventListener('click',async()=>{mergeButton.disabled=true;mergeButton.textContent='統合中…';try{const ok=await mergeFieldDataSafely();if(ok){out.textContent+='\\n統合保存が完了しました。別端末で再読み込みしてください。';mergeButton.remove();}}catch(e){alert('統合を停止しました。データは変更していません。\\n'+(e.message||e));mergeButton.disabled=false;mergeButton.textContent='不足データを安全に統合';}});out.insertAdjacentElement('afterend',mergeButton);}
  }catch(err){out.textContent='比較できませんでした：'+(err.message||err);}
  finally{button.disabled=false;button.textContent='端末・クラウドの差分を確認';}
 });
+async function mergeFieldDataSafely(){
+ const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+ const latest=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
+ if(latest.error)throw latest.error;if(!latest.data?.payload)throw Error('最新クラウドデータを取得できません');
+ const remote=latest.data.payload,local=cloneFieldData(db),merged={...remote},keys=['projects','visits','dimensions','schedules','pdfs'];let conflicts=[];
+ for(const k of keys){const a=Array.isArray(local[k])?local[k]:[],b=Array.isArray(remote[k])?remote[k]:[],map=new Map(b.filter(x=>x&&x.id!=null).map(x=>[String(x.id),x]));for(const item of a){if(!item||item.id==null)throw Error(k+'にIDのないデータがあるため停止しました');const id=String(item.id),old=map.get(id);if(old&&JSON.stringify(old)!==JSON.stringify(item))conflicts.push(k+'/'+id);else if(!old)map.set(id,item);}if(!conflicts.length)merged[k]=Array.from(map.values());}
+ if(conflicts.length)throw Error('同じIDで内容が異なるデータがあります。自動統合を停止しました：'+conflicts.slice(0,5).join('、'));
+ if(!confirm('端末とクラウドの不足データを統合します。\n'+keys.map(k=>k+'：端末 '+(local[k]||[]).length+'件／クラウド '+(remote[k]||[]).length+'件 → 統合 '+merged[k].length+'件').join('\n')+'\n既存データは削除しません。続けますか？'))return false;
+ const saved=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});if(saved.error)throw saved.error;const row=Array.isArray(saved.data)?saved.data[0]:saved.data;if(!row?.revision)throw Error('保存結果を確認できません');
+ db=merged;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(merged);fieldCloudReady=true;localStorage.setItem(key,JSON.stringify(merged));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
+ fieldSyncDiagnostics.status='端末・クラウドの不足データを統合済み';fieldSyncDiagnostics.localRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.localCounts=fieldDataCounts(merged);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(merged);renderFieldSyncDiagnostics();render();return true;
+}
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
  fieldSyncWindowStarted=true;
