@@ -135,9 +135,10 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 .undecided-project-card button{flex:0 0 auto}
 .undecided-project-empty{font-size:13px;color:#53675b}
 @media(max-width:560px){.undecided-projects-panel{padding:10px}.undecided-project-card{align-items:flex-start;flex-direction:column}.undecided-project-card button{width:100%}}
+.ledger-schedule-edit{margin:18px 0 16px;padding:14px;border:1px solid #d5e0e8;border-radius:11px;background:#f7fafc}.ledger-schedule-edit h3{margin:0 0 10px;font-size:15px;color:#173f59}.ledger-schedule-edit .schedule-date-time{margin-top:0}.ledger-schedule-edit input[type=date],.ledger-schedule-edit input[type=time]{width:100%}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v209</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v210</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -183,6 +184,14 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 
 
 <input id="dDate" type="hidden" value=""><input id="dLabel" type="hidden" value="予定内容"><input id="dValue" type="hidden" value=""><input id="dUnit" type="hidden" value=""><button id="saveDimension" type="button" hidden aria-hidden="true" tabindex="-1"></button>
+<div class="ledger-schedule-edit">
+ <h3>工事予定の変更</h3>
+ <div class="schedule-date-time">
+  <div><label for="ledgerWorkDate">工事施工日</label><div class="work-date-control"><input id="ledgerWorkDate" type="date" min="0001-01-01" max="9999-12-31"><label class="work-date-undecided" for="ledgerWorkDateUndecided"><input id="ledgerWorkDateUndecided" type="checkbox">工事日未定</label></div></div>
+  <div><label for="ledgerScheduleTime">開始時刻</label><input id="ledgerScheduleTime" type="time"></div>
+ </div>
+ <div id="ledgerWorkDateStatus" class="small" aria-live="polite">変更すると自動保存されます。</div>
+</div>
 <label for="ledgerScheduleContent">予定内容</label><textarea id="ledgerScheduleContent" rows="8" placeholder="作業内容・持参品・連絡事項など"></textarea>
 <div id="scheduleContentSaveStatus" class="small" aria-live="polite">入力すると自動保存されます。</div>
 </div>
@@ -783,6 +792,11 @@ function loadProjectMemo(projectId){
  const mainText=project?.scheduleContent??scheduled?.content??'';
  const oldMemo=project?.plannedMemo??legacy?.memo??'';
  $('ledgerScheduleContent').value=[mainText,oldMemo].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(mainText&&oldMemo&&mainText.includes(oldMemo)?'':'\n\n');
+ $('ledgerWorkDate').value=project?.workDate||'';
+ $('ledgerWorkDateUndecided').checked=Boolean(project?.workDateUndecided);
+ $('ledgerWorkDate').disabled=$('ledgerWorkDateUndecided').checked;
+ $('ledgerScheduleTime').value=project?.scheduleTime||scheduled?.time||'';
+ $('ledgerWorkDateStatus').textContent='変更すると自動保存されます。';
  $('scheduleContentSaveStatus').textContent='入力すると自動保存されます。';
 }
 window.openLedger=function(projectId){
@@ -815,6 +829,33 @@ async function saveLedgerField(){
  }catch(e){status.textContent='保存できませんでした。通信状態を確認して、もう一度欄から移動してください。';}
  finally{memoSaveBusy=false;}
 }
+let ledgerDateSaveTimer=null,ledgerDateSaveBusy=false;
+async function saveLedgerScheduleDate(){
+ const projectId=$('dProject').value,project=db.projects.find(x=>x.id===projectId),status=$('ledgerWorkDateStatus');
+ if(!project)return;
+ if(ledgerDateSaveBusy){status.textContent='保存処理中です。';return;}
+ ledgerDateSaveBusy=true;status.textContent='保存中…';
+ try{
+  const undecided=$('ledgerWorkDateUndecided').checked;
+  const date=undecided?'':$('ledgerWorkDate').value;
+  const time=$('ledgerScheduleTime').value;
+  Object.assign(project,{workDate:date,workDateUndecided:undecided,scheduleTime:time});
+  db.schedules=db.schedules||[];
+  let event=db.schedules.find(x=>x.projectId===projectId&&x.type==='工事');
+  if(date){
+   if(event)Object.assign(event,{date,time,content:project.scheduleContent||''});
+   else db.schedules.push({id:id(),createdAt:new Date().toISOString(),projectId,date,time,type:'工事',content:project.scheduleContent||''});
+  }else db.schedules=db.schedules.filter(x=>!(x.projectId===projectId&&x.type==='工事'));
+  await save();
+  renderSelectedProject();
+  status.textContent='工事日・開始時刻を保存しました。';
+ }catch(e){status.textContent='保存できませんでした。通信状態を確認してください。';}
+ finally{ledgerDateSaveBusy=false;}
+}
+function queueLedgerScheduleDateSave(){clearTimeout(ledgerDateSaveTimer);ledgerDateSaveTimer=setTimeout(saveLedgerScheduleDate,250);}
+$('ledgerWorkDateUndecided').addEventListener('change',()=>{$('ledgerWorkDate').disabled=$('ledgerWorkDateUndecided').checked;if($('ledgerWorkDateUndecided').checked)$('ledgerWorkDate').value='';queueLedgerScheduleDateSave();});
+$('ledgerWorkDate').addEventListener('change',queueLedgerScheduleDateSave);
+$('ledgerScheduleTime').addEventListener('change',queueLedgerScheduleDateSave);
 $('ledgerScheduleContent').addEventListener('input',()=>{$('scheduleContentSaveStatus').textContent='未保存の変更があります。入力後、欄から移動してください。';});
 $('ledgerScheduleContent').addEventListener('blur',()=>{clearTimeout(memoSaveTimer);memoSaveTimer=setTimeout(saveLedgerField,250);});
 function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
