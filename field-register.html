@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v159</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v160</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div></section>
 
@@ -218,13 +218,29 @@ async function syncFieldCloud(reason='同期'){
   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');
   const localSnapshot=cloneFieldData(db),snapshotText=JSON.stringify(localSnapshot);
   const baseText=localStorage.getItem(FIELD_BASE_KEY),baseAtStart=baseText?JSON.parse(baseText):cloneFieldData(fieldCloudBaseData||localSnapshot);
+  if(reason==='30分後の定期同期'&&JSON.stringify(localSnapshot)===JSON.stringify(baseAtStart)){
+   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);
+   fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
+   updateFieldSyncState('クラウド同期済み（8分後・30分後の確認完了）');
+   return;
+  }
   let payload=localSnapshot,lastError=null;
   for(let attempt=0;attempt<12;attempt++){
    const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:fieldCloudRevision});
    if(!error){
     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');
     fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
-    if(JSON.stringify(db)===snapshotText){localStorage.setItem(key,JSON.stringify(payload));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;updateFieldSyncState('クラウド同期済み（'+reason+'）');}
+    if(JSON.stringify(db)===snapshotText){
+     localStorage.setItem(key,JSON.stringify(payload));
+     if(reason==='8分後の定期同期'){
+      localStorage.setItem(FIELD_PENDING_KEY,'1');localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));
+      updateFieldSyncState('1回目同期済み・30分後に最終確認');
+     }else{
+      localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);
+      fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
+      updateFieldSyncState('クラウド同期済み（'+reason+'）');
+     }
+    }
     else{localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));updateFieldSyncState('同期中に変更あり・次回同期待ち');}
     return;
    }
