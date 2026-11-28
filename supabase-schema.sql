@@ -71,7 +71,7 @@ begin
   if p_expected_revision = 0 then
     insert into public.shared_documents(document_key, payload, revision, updated_at, updated_by)
     values (p_document_key, p_payload, 1, now(), caller_id)
-    on conflict (document_key) do nothing
+    on conflict on constraint shared_documents_pkey do nothing
     returning * into saved;
   elsif p_expected_revision > 0 then
     update public.shared_documents
