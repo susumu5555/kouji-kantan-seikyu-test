@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v190</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v191</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -753,28 +753,24 @@ window.openSavedPdf=async function(id){
   const u=URL.createObjectURL(record.blob);const w=window.open(u,'_blank');if(!w){const a=document.createElement('a');a.href=u;a.download=record.fileName||meta.fileName;a.click();}setTimeout(()=>URL.revokeObjectURL(u),60000);
  }catch(e){alert('PDFを開けませんでした：'+(e.message||e));}
 };
-window.addEventListener('message',async event=>{
- if(event.origin!==PHOTO_MAKER_ORIGIN)return;
- const m=event.data;
- if(!m||m.type!=='PHOTO_PDF_READY'||!m.projectId||!(m.pdfBytes instanceof ArrayBuffer))return;
- const project=db.projects.find(p=>p.id===m.projectId);
- if(!project)return;
+async function registerPhotoPdfImmediately(record,category,projectId){
+ let meta=(db.pdfs||[]).find(x=>x.id===record.id);
+ if(!meta){meta={id:record.id,projectId,category:['report','support'].includes(category)?category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath:null};db.pdfs.push(meta);}
+ $('dProject').value=projectId;await save();render();
+ $('pdfSaveStatus').textContent='写真PDFを端末に保存し、一覧に反映しました。クラウド保存を確認しています…';
  try{
-  const blob=new Blob([m.pdfBytes],{type:'application/pdf'});
-  const record={id:id(),projectId:m.projectId,fileName:m.fileName||'現場写真.pdf',createdAt:new Date().toISOString(),size:blob.size,sizeLabel:fmtBytes(blob.size),blob};
-  await savePdfBlob(record);
-  const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('ログイン状態を確認できません。PDFはこの端末に保存しました。');
-  const storagePath=cloud.user.id+'/'+m.projectId+'/'+record.id+'.pdf';
-  const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,blob,{contentType:'application/pdf',upsert:false});
-  if(uploadError)throw new Error('端末には保存しましたが、クラウドPDF保存に失敗しました：'+uploadError.message);
-  db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(m.category)?m.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
-  await save();renderProjectPdfs();
-  $('pdfSaveStatus').textContent='写真PDFを端末とクラウドに保存しました。他の端末からも開けます。';
-  event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);
- }catch(e){
-  $('pdfSaveStatus').textContent='自動保存できませんでした：'+(e.message||e);
-  event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);
- }
+  const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
+  const storagePath=cloud.user.id+'/'+projectId+'/'+record.id+'.pdf';
+  if(!meta.storagePath){const {error}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});if(error)throw error;meta.storagePath=storagePath;}
+  await save();render();$('pdfSaveStatus').textContent='写真PDFを端末とクラウドに保存しました。他の端末からも開けます。';
+ }catch(e){$('pdfSaveStatus').textContent='写真PDFは端末に保存済みで、一覧にも反映しました。クラウド保存は未完了です：'+(e.message||e);console.error('Photo PDF cloud upload failed',e);}
+}
+window.addEventListener('message',async event=>{
+ if(event.origin!==PHOTO_MAKER_ORIGIN)return;const m=event.data;
+ if(!m||m.type!=='PHOTO_PDF_READY'||!m.projectId||!(m.pdfBytes instanceof ArrayBuffer))return;
+ if(!db.projects.some(p=>p.id===m.projectId))return;
+ try{const blob=new Blob([m.pdfBytes],{type:'application/pdf'});const record={id:id(),projectId:m.projectId,fileName:m.fileName||'現場写真.pdf',createdAt:new Date().toISOString(),size:blob.size,sizeLabel:fmtBytes(blob.size),blob};await savePdfBlob(record);await registerPhotoPdfImmediately(record,m.category,m.projectId);event.source?.postMessage({type:'PHOTO_PDF_SAVED',pdfId:record.id},event.origin);}
+ catch(e){$('pdfSaveStatus').textContent='写真PDFを一覧に反映できませんでした：'+(e.message||e);event.source?.postMessage({type:'PHOTO_PDF_SAVE_FAILED',message:e.message||String(e)},event.origin);}
 });
 window.openProjectPhotoMaker=(category)=>{
  const p=db.projects.find(x=>x.id===$('dProject').value);
@@ -788,31 +784,13 @@ window.openProjectPhotoMaker=(category)=>{
 };
 
 async function processPhotoPdfReturn(){
- const raw=localStorage.getItem('genbaPhotoPdfReturn_v1');
- if(!raw)return;
- let handoff;
- try{handoff=JSON.parse(raw)}catch(e){localStorage.removeItem('genbaPhotoPdfReturn_v1');return}
+ const raw=localStorage.getItem('genbaPhotoPdfReturn_v1');if(!raw)return;
+ let handoff;try{handoff=JSON.parse(raw)}catch(e){return}
  const project=db.projects.find(p=>p.id===handoff.projectId);
  if(!project){$('pdfSaveStatus').textContent='保存先の現場が見つかりません。PDFデータは端末内に保持されています。';return}
- try{
-  const record=await getPdfRecord(handoff.recordId);
-  if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');
-  if(!(db.pdfs||[]).some(x=>x.id===record.id)){
-   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
-   const storagePath=cloud.user.id+'/'+record.projectId+'/'+record.id+'.pdf';
-   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
-   if(uploadError)throw new Error('クラウドPDF保存に失敗しました：'+uploadError.message);
-   db.pdfs.push({id:record.id,projectId:record.projectId,category:['report','support'].includes(handoff.category)?handoff.category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
-   await save();
-  }
-  localStorage.removeItem('genbaPhotoPdfReturn_v1');
-  $('dProject').value=record.projectId;
-  render();$('pdfSaveStatus').textContent='写真PDFをこの現場の端末とクラウドに保存しました。下の「保存済み写真PDF」から開いて写真を確認できます。';
-  $('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});
- }catch(e){
-  $('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、クラウド保存を完了できませんでした。再読み込みして再試行してください。'+(e.message||'');
-  console.error('Photo PDF return failed',e);
- }
+ $('dProject').value=handoff.projectId;render();$('pdfSaveStatus').textContent='作成した写真PDFを一覧に反映しています…';
+ try{const record=await getPdfRecord(handoff.recordId);if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');await registerPhotoPdfImmediately(record,handoff.category,handoff.projectId);localStorage.removeItem('genbaPhotoPdfReturn_v1');$('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});}
+ catch(e){$('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、一覧への反映を完了できませんでした：'+(e.message||e);console.error('Photo PDF return failed',e);}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');});
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
