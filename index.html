@@ -54,7 +54,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 document.querySelectorAll('[data-feature]').forEach(button=>{
   button.addEventListener('click',()=>{
-    const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?page=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html'};if(routes[button.dataset.feature]){location.href=routes[button.dataset.feature];return;}if(button.dataset.feature==='バックアップ'){const raw=localStorage.getItem('genbaThreeModule_v1');if(!raw){alert('このブラウザーに現場データがありません。');return;}const blob=new Blob([raw],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='工事管理バックアップ.json';a.click();URL.revokeObjectURL(url);return;}alert('この機能は現在利用できません。');
+    const routes={'現場登録':'./field-register.html?page=register','未完了現場':'./field-register.html?page=cases','工事完了履歴':'./field-register.html?list=completed','工事日確認':'./field-register.html?page=schedule','見積作成':'./invoice.html','共有設定':'./shared-setup.html'};if(routes[button.dataset.feature]){location.href=routes[button.dataset.feature];return;}if(button.dataset.feature==='バックアップ'){const raw=localStorage.getItem('genbaThreeModule_v1');if(!raw){alert('このブラウザーに現場データがありません。');return;}const blob=new Blob([raw],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='工事管理バックアップ.json';a.click();URL.revokeObjectURL(url);return;}alert('この機能は現在利用できません。');
   });
 });
 </script>
