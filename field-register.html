@@ -125,9 +125,10 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 .construction-date-label{font-size:12px;font-weight:800;letter-spacing:.04em;color:#92500b}
 .construction-date-badge strong{font-size:15px;font-weight:850;color:#713900;font-variant-numeric:tabular-nums}
 @media(max-width:560px){.construction-date-badge{gap:6px;padding:6px 9px}.construction-date-badge strong{font-size:13px}.construction-date-label{font-size:11px}}
+.work-date-control{display:flex;align-items:center;gap:10px}.work-date-control>#pWorkDate{flex:1;min-width:0}.work-date-undecided{display:inline-flex!important;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;white-space:nowrap;margin:0!important;padding:10px 12px;border:1px solid #e9a23b;border-radius:9px;background:#fff1d6;color:#713900;font-size:13px;font-weight:800!important;cursor:pointer}.work-date-undecided input{width:17px!important;height:17px;margin:0;accent-color:#b96a0b}@media(max-width:560px){.work-date-control{gap:6px}.work-date-undecided{padding:9px 7px;font-size:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v207</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v208</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -140,7 +141,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 <label for="pPref">都道府県</label><select id="pPref"><option value="">都道府県を選択</option></select>
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
-<div class="schedule-date-time"><div><label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div><label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700"><input id="pWorkDateUndecided" type="checkbox" style="width:auto">工事日未定</label></div><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div></div>
+<div class="schedule-date-time"><div><label for="pWorkDate">工事施工日</label><div class="work-date-control"><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><label class="work-date-undecided" for="pWorkDateUndecided"><input id="pWorkDateUndecided" type="checkbox">工事日未定</label></div><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div></div><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div></div>
 <div class="schedule-content-field"><label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="6" placeholder="作業内容・持参品・連絡事項など"></textarea></div>
 <div class="small">工事日が決まっている場合はカレンダーに登録されます。未定の場合は「工事日未定」にチェックしてください。</div>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
