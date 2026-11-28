@@ -867,9 +867,18 @@ async function processPhotoPdfReturn(){
  try{const record=await getPdfRecord(handoff.recordId);if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');await registerPhotoPdfImmediately(record,handoff.category,handoff.projectId);localStorage.removeItem('genbaPhotoPdfReturn_v1');$('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});}
  catch(e){$('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、一覧への反映を完了できませんでした：'+(e.message||e);console.error('Photo PDF return failed',e);}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){render();checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});
+window.addEventListener('pageshow',event=>{
+ // ブラウザの戻る操作で復帰した場合は、通信を待たず端末内データを即時表示する
+ if(event.persisted){render();}
+});
 window.addEventListener('online',()=>syncPendingPhotoPdfUploads());
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
+// 画面はクラウド応答を待たず、端末に保存済みのデータで先に描画する。
+// その後、クラウドの最新データ取得が完了した時点で再描画する。
+const initialReturnProjectId=new URLSearchParams(location.search).get('projectId');
+if(initialReturnProjectId&&db.projects.some(p=>p.id===initialReturnProjectId))$('dProject').value=initialReturnProjectId;
+render();
 (async()=>{try{
  await initializeFieldCloud();
  await syncPendingPhotoPdfUploads();
