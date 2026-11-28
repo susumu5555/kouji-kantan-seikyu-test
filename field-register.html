@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v190</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v191</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -479,13 +479,46 @@ function startFieldRemoteUpdates(){
 }
 
 const FIELD_BACKUP_LAST_KEY='koujiFieldAutoBackupLastAt_v1';
-function buildFieldBackup(){return new Blob([JSON.stringify({format:'kouji-field-backup',version:1,createdAt:new Date().toISOString(),appVersion:'v182',data:cloneFieldData(db)},null,2)],{type:'application/json'});}
-function downloadFieldBackup(auto=false){
- try{const blob=buildFieldBackup(),url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date(),stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');
- a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
- if(auto)localStorage.setItem(FIELD_BACKUP_LAST_KEY,String(Date.now()));
- const status=document.getElementById('fieldBackupStatus');if(status)status.textContent=(auto?'週次自動バックアップを開始しました。':'バックアップを作成しました。')+' ダウンロードフォルダを確認してください。';return true;
- }catch(e){const status=document.getElementById('fieldBackupStatus');if(status)status.textContent='バックアップできませんでした：'+(e.message||e);return false;}
+function blobToBase64(blob){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>{const result=String(reader.result||'');const comma=result.indexOf(',');if(comma<0){reject(Error('PDFを読み取れません'));return;}resolve(result.slice(comma+1));};
+  reader.onerror=()=>reject(reader.error||Error('PDFを読み取れません'));
+  reader.readAsDataURL(blob);
+ });
+}
+function base64ToPdfBlob(value){
+ const binary=atob(value),bytes=new Uint8Array(binary.length);
+ for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+ return new Blob([bytes],{type:'application/pdf'});
+}
+async function collectPdfBackupFiles(){
+ const files=[];
+ for(const meta of (db.pdfs||[])){
+  let record=await getPdfRecord(meta.id),blob=record?.blob||null;
+  if(!blob&&meta.storagePath){
+   const cloud=window.KoujiCloud;
+   if(!cloud?.ready)throw Error('PDF「'+(meta.fileName||meta.id)+'」をクラウドから取得できません。ログイン状態を確認してください。');
+   const {data,error}=await cloud.client.storage.from('field-pdfs').download(meta.storagePath);
+   if(error)throw error;blob=data;
+  }
+  if(!blob)throw Error('PDF「'+(meta.fileName||meta.id)+'」の実ファイルが端末にもクラウドにもありません。バックアップを中止しました。');
+  files.push({id:meta.id,fileName:meta.fileName||'現場写真.pdf',mimeType:'application/pdf',base64:await blobToBase64(blob)});
+ }
+ return files;
+}
+async function downloadFieldBackup(auto=false){
+ const status=document.getElementById('fieldBackupStatus');
+ try{
+  if(status)status.textContent='写真PDFの実ファイルを集めています。画面を閉じないでください。';
+  const pdfFiles=await collectPdfBackupFiles();
+  const backup={format:'kouji-field-backup',version:2,createdAt:new Date().toISOString(),appVersion:'v191',data:cloneFieldData(db),pdfFiles};
+  const blob=new Blob([JSON.stringify(backup)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date(),stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');
+  a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  if(auto)localStorage.setItem(FIELD_BACKUP_LAST_KEY,String(Date.now()));
+  if(status)status.textContent=(auto?'週次自動バックアップを作成しました。':'バックアップを作成しました。')+' 写真PDF '+pdfFiles.length+'件の実ファイルを含みます。ダウンロードフォルダを確認してください。';
+  return true;
+ }catch(e){if(status)status.textContent='バックアップできませんでした：'+(e.message||e);alert('バックアップできませんでした。写真PDFを含めて保存できていません。\\n'+(e.message||e));return false;}
 }
 document.getElementById('fieldBackupButton')?.addEventListener('click',()=>downloadFieldBackup(false));
 document.getElementById('fieldRestoreButton')?.addEventListener('click',()=>document.getElementById('fieldRestoreFile').click());
@@ -494,15 +527,31 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
  try{
   const parsed=JSON.parse(await file.text()),backup=parsed?.format==='kouji-field-backup'?parsed.data:parsed;
   if(!backup||!Array.isArray(backup.projects))throw Error('現場データのバックアップとして認識できません');
-  const restored={projects:backup.projects,visits:Array.isArray(backup.visits)?backup.visits:[],dimensions:Array.isArray(backup.dimensions)?backup.dimensions:[],schedules:Array.isArray(backup.schedules)?backup.schedules:[],pdfs:Array.isArray(backup.pdfs)?backup.pdfs:[]};
+  const pdfFiles=parsed?.format==='kouji-field-backup'&&Array.isArray(parsed.pdfFiles)?parsed.pdfFiles:[];
+  const pdfMetadata=Array.isArray(backup.pdfs)?backup.pdfs:[];
+  if(pdfMetadata.length&&!pdfFiles.length&&!confirm('このバックアップには写真PDFの管理情報はありますが、PDF実ファイルは含まれていません。PDFは復元されません。現場データだけを復元しますか？'))return;
+  const fileIds=new Set(pdfFiles.map(x=>x?.id));
+  const missing=pdfMetadata.filter(x=>!fileIds.has(x.id));
+  if(missing.length&&!confirm('バックアップ内の写真PDF '+missing.length+'件は実ファイルがありません。実ファイルがあるPDF '+(pdfFiles.length)+'件と現場データを復元しますか？'))return;
+  const restored={projects:backup.projects,visits:Array.isArray(backup.visits)?backup.visits:[],dimensions:Array.isArray(backup.dimensions)?backup.dimensions:[],schedules:Array.isArray(backup.schedules)?backup.schedules:[],pdfs:pdfMetadata.filter(x=>fileIds.has(x.id))};
   const restoreEpoch='restore-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
   restored.__restoreEpoch=restoreEpoch;
   const counts=fieldDataCounts(restored);
-  if(!confirm('【完全復元・重要】現在の端末とクラウドの現場データを、選択したバックアップファイルの内容に置き換えます。\n\n現在のデータにしかない現場・履歴・寸法・予定・PDF管理情報は削除されます。\nバックアップ時点の状態に戻します。\n\n復元件数：現場 '+counts.projects+'件／訪問 '+counts.visits+'件／寸法 '+counts.dimensions+'件／予定 '+counts.schedules+'件／PDF管理情報 '+counts.pdfs+'件\n\n本当に完全復元しますか？'))return;
-  status.textContent='クラウドを完全復元中です。画面を閉じないでください。';
+  if(!confirm('【完全復元・重要】現在の端末とクラウドの現場データを、選択したバックアップファイルの内容に置き換えます。\\n\\n現場・履歴・寸法・予定・写真PDF管理情報をバックアップ時点の状態に戻します。\\n\\n復元件数：現場 '+counts.projects+'件／訪問 '+counts.visits+'件／寸法 '+counts.dimensions+'件／予定 '+counts.schedules+'件／写真PDF '+counts.pdfs+'件（実ファイル '+pdfFiles.length+'件）\\n\\n本当に完全復元しますか？'))return;
+  status.textContent='写真PDFをクラウドに復元中です。画面を閉じないでください。';
   fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
   await fieldCloudQueue.catch(()=>{});
   const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません。復元は実行していません。');
+  const restoredBlobs=[];
+  for(const entry of pdfFiles){
+   if(!entry?.id||typeof entry.base64!=='string')throw Error('写真PDF実ファイルの形式が不正です');
+   const meta=pdfMetadata.find(x=>x.id===entry.id);if(!meta)continue;
+   const blob=base64ToPdfBlob(entry.base64);
+   const storagePath=meta.storagePath||cloud.user.id+'/'+meta.projectId+'/'+meta.id+'.pdf';
+   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,blob,{contentType:'application/pdf',upsert:true});
+   if(uploadError)throw uploadError;
+   meta.storagePath=storagePath;restoredBlobs.push({id:meta.id,projectId:meta.projectId,fileName:meta.fileName||entry.fileName,blob,size:blob.size});
+  }
   let saved=false,lastError=null;
   for(let attempt=0;attempt<8;attempt++){
    const latest=await cloud.client.from('shared_documents').select('revision').eq('document_key','field_data').maybeSingle();
@@ -513,14 +562,15 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
    await new Promise(resolve=>setTimeout(resolve,Math.min(350*Math.pow(2,attempt),3000)));
   }
   if(!saved)throw lastError||Error('他端末の更新が続いているため完全復元できませんでした');
+  for(const record of restoredBlobs)await savePdfBlob(record);
   db=cloneFieldData(restored);fieldCloudBaseData=cloneFieldData(restored);fieldCloudReady=true;
   localStorage.setItem('koujiFieldRestoreEpoch_v1',restoreEpoch);
   localStorage.setItem(key,JSON.stringify(restored));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
   localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(restored));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
   localStorage.setItem('koujiFieldLastSyncAt_v1',String(Date.now()));
   updateFieldSyncState('バックアップファイルの内容で完全復元済み');
-  render();status.textContent='完全復元が完了しました。端末とクラウドのデータをバックアップ時点の内容に置き換えました。';
- }catch(e){status.textContent='完全復元できませんでした：'+(e.message||e);alert('完全復元できませんでした。現在のデータは置き換えていません。\n'+(e.message||e));}
+  render();status.textContent='完全復元が完了しました。写真PDF実ファイル '+restoredBlobs.length+'件も端末とクラウドに復元しました。';
+ }catch(e){status.textContent='完全復元できませんでした：'+(e.message||e);alert('完全復元できませんでした。現在の現場データは置き換えていません。\\n'+(e.message||e));}
  finally{event.target.value='';}
 });
 function runWeeklyFieldBackup(){const shouldRun=()=>{const last=Number(localStorage.getItem(FIELD_BACKUP_LAST_KEY)||0);return !last||Date.now()-last>=7*24*60*60*1000;};if(shouldRun())setTimeout(()=>{if(shouldRun())downloadFieldBackup(true);},1800);}
