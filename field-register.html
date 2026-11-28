@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v209</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v210</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div></section>
 
@@ -723,7 +723,16 @@ function renderProjectInventory(){
  const cloudRows=(fieldSyncDiagnostics.cloudProjectRows||[]);
  el.textContent='【現場一覧・完了状態】\\n'+rows.map(x=>x.i+'. '+x.name+' / completed='+String(x.completed)+' / 完了日='+(x.completedDate||'なし')).join('\\n')+'\\n\\n【クラウド側の現場一覧】\\n'+(cloudRows.length?cloudRows.map((x,i)=>(i+1)+'. '+x.name+' / completed='+String(x.completed)+' / 完了日='+(x.completedDate||'なし')).join('\\n'):'クラウド一覧は未取得');
 }
-function render(){const params=new URLSearchParams(location.search);if(params.get('page')==='completed'||params.get('list')==='completed')projectListMode='completed';else if(params.get('page')==='cases'||params.get('list')==='open')projectListMode='open';const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+function render(){
+ const params=new URLSearchParams(location.search);
+ if(params.get('page')==='completed'||params.get('list')==='completed')projectListMode='completed';
+ else if(params.get('page')==='cases'||params.get('list')==='open')projectListMode='open';
+ const title=document.getElementById('casesTitle');
+ if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';
+ try{renderProjects()}catch(e){const box=document.getElementById('projectList');if(box)box.textContent='一覧表示エラー：'+(e.message||e);console.error('renderProjects',e);return;}
+ try{fillProjectSelects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+ catch(e){const box=document.getElementById('projectList');if(box)box.insertAdjacentHTML('beforeend','<div class="small">画面更新エラー：'+esc(e.message||e)+'</div>');console.error('render details',e);}
+}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
