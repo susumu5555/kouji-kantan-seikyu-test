@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v156</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v157</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div></section>
 
@@ -200,46 +200,52 @@ function rebaseFieldChanges(base,local,remote){
  }
  return merged;
 }
-const save=()=>{
- const snapshot=JSON.stringify(db);
- localStorage.setItem(key,snapshot);
- if(!fieldCloudReady)return Promise.resolve();
- fieldCloudQueue=fieldCloudQueue.catch(()=>{}).then(async()=>{
-  const cloud=window.KoujiCloud;
-  if(!cloud?.ready)throw Error('クラウド認証が切れています');
-  const localSnapshot=JSON.parse(snapshot);
-  const baseAtStart=cloneFieldData(fieldCloudBaseData||localSnapshot);
+const FIELD_PENDING_KEY='koujiFieldPendingSync_v1';
+const FIELD_BASE_KEY='koujiFieldSyncBase_v1';
+let fieldSyncTimers=[],fieldSyncWindowStarted=false,fieldSyncInProgress=false;
+function updateFieldSyncState(status){fieldSyncDiagnostics.status=status;fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);renderFieldSyncDiagnostics();}
+function scheduleFieldCloudSync(){
+ if(!fieldCloudReady||fieldSyncWindowStarted)return;
+ fieldSyncWindowStarted=true;
+ fieldSyncTimers=[setTimeout(()=>syncFieldCloud('15分後の定期同期'),900000),setTimeout(()=>{syncFieldCloud('30分後の定期同期');fieldSyncTimers=[];fieldSyncWindowStarted=false;},1800000)];
+ updateFieldSyncState('端末保存済み・クラウド同期待ち（15分後／30分後）');
+}
+async function syncFieldCloud(reason='同期'){
+ if(!fieldCloudReady||fieldSyncInProgress||localStorage.getItem(FIELD_PENDING_KEY)!=='1')return;
+ fieldSyncInProgress=true;
+ try{
+  await fieldCloudQueue.catch(()=>{});
+  const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');
+  const localSnapshot=cloneFieldData(db),snapshotText=JSON.stringify(localSnapshot);
+  const baseText=localStorage.getItem(FIELD_BASE_KEY),baseAtStart=baseText?JSON.parse(baseText):cloneFieldData(fieldCloudBaseData||localSnapshot);
   let payload=localSnapshot,lastError=null;
   for(let attempt=0;attempt<12;attempt++){
    const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:fieldCloudRevision});
    if(!error){
-    const row=Array.isArray(result)?result[0]:result;
-    if(!row?.revision)throw Error('クラウド保存結果を確認できません');
-    fieldCloudRevision=Number(row.revision);
-    fieldCloudBaseData=cloneFieldData(payload);
-    if(JSON.stringify(db)===snapshot){localStorage.setItem(key,JSON.stringify(payload));db=payload;}
-    localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+    const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+    fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+    if(JSON.stringify(db)===snapshotText){localStorage.setItem(key,JSON.stringify(payload));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);updateFieldSyncState('クラウド同期済み（'+reason+'）');}
+    else{localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));updateFieldSyncState('同期中に変更あり・次回同期待ち');}
     return;
    }
-   lastError=error;
-   if(!String(error.message||error).includes('revision_conflict'))throw error;
+   lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
    await new Promise(resolve=>setTimeout(resolve,Math.min(200*Math.pow(2,Math.min(attempt,4)),3000)));
    const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
-   if(latest.error)throw latest.error;
-   if(!latest.data)throw Error('クラウドの現場データが見つかりません');
-   const remote=latest.data.payload;
-   if(!remote||!Array.isArray(remote.projects))throw Error('最新のクラウドデータ形式が不正です');
-   fieldCloudRevision=Number(latest.data.revision);
-   payload=rebaseFieldChanges(baseAtStart,localSnapshot,remote);
-   fieldCloudBaseData=cloneFieldData(remote);
+   if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウドの現場データが見つかりません');
+   const remote=latest.data.payload;if(!remote||!Array.isArray(remote.projects))throw Error('最新のクラウドデータ形式が不正です');
+   fieldCloudRevision=Number(latest.data.revision);payload=rebaseFieldChanges(baseAtStart,localSnapshot,remote);fieldCloudBaseData=cloneFieldData(remote);
   }
-  throw lastError||Error('他端末の更新が続いています。時間をおいて再試行してください');
- }).catch(err=>{
-  console.error('Field cloud save failed',err);
-  alert('端末には保存しましたが、クラウド同期を完了できませんでした。端末データは退避しています。\\n'+(err.message||err));
-  throw err;
- });
- return fieldCloudQueue;
+  throw lastError||Error('他端末の更新が続いています');
+ }catch(err){console.error('Field cloud sync failed',err);updateFieldSyncState('同期失敗・端末データ保持中：'+(err.message||err));}
+ finally{fieldSyncInProgress=false;}
+}
+const save=()=>{
+ const snapshot=JSON.stringify(db);localStorage.setItem(key,snapshot);
+ if(fieldCloudReady){
+  if(localStorage.getItem(FIELD_PENDING_KEY)!=='1')localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(fieldCloudBaseData||db));
+  localStorage.setItem(FIELD_PENDING_KEY,'1');scheduleFieldCloudSync();
+ }
+ return Promise.resolve();
 };
 async function initializeFieldCloud(){
  if(!window.KoujiCloudReady)throw Error('共有ログイン機能を読み込めません。再読み込みしてください');
@@ -251,6 +257,7 @@ async function initializeFieldCloud(){
   if(localStorage.getItem('koujiFieldData_preCloud_v1')!==raw)throw Error('同期前バックアップを保存できません。端末データを変更せず停止します');
  }
  const localData=JSON.parse(raw||'{"projects":[],"visits":[],"dimensions":[],"schedules":[],"pdfs":[]}');
+ const hasPendingLocal=localStorage.getItem(FIELD_PENDING_KEY)==='1';const savedSyncBase=localStorage.getItem(FIELD_BASE_KEY);
  fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.localCounts=fieldDataCounts(localData);
  if(!localData||typeof localData!=='object'||!Array.isArray(localData.projects)||!Array.isArray(localData.visits)||!Array.isArray(localData.dimensions)||!Array.isArray(localData.schedules))throw Error('端末側データの形式が不正です。データは変更せず停止しました');
  if(!Array.isArray(localData.pdfs))localData.pdfs=[];
@@ -273,13 +280,14 @@ async function initializeFieldCloud(){
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
    fieldSyncDiagnostics.status='端末データの更新番号がクラウドより新しいため同期を保留（端末データ退避済み）';fieldSyncDiagnostics.backupKey=backupKey;db=cloudData;fieldCloudRevision=Number(docResult.data.revision);fieldCloudBaseData=cloneFieldData(cloudData);fieldCloudReady=false;renderFieldSyncDiagnostics();return fieldCloudRevision;
   }else{
-   db=cloudData;fieldCloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.status=fieldSyncDiagnostics.localRevision===fieldCloudRevision?'端末とクラウドの更新番号は一致':'クラウドから最新データを読み込み';
+   if(hasPendingLocal&&savedSyncBase){db=rebaseFieldChanges(JSON.parse(savedSyncBase),localData,cloudData);fieldSyncDiagnostics.status='前回の未同期データを保持・再同期待ち';}else{db=cloudData;fieldSyncDiagnostics.status=fieldSyncDiagnostics.localRevision===Number(docResult.data.revision)?'端末とクラウドの更新番号は一致':'クラウドから最新データを読み込み';}fieldCloudRevision=Number(docResult.data.revision);
   }
  }
  localStorage.setItem(key,JSON.stringify(db));
  fieldCloudBaseData=cloneFieldData(db);
  localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
  fieldCloudReady=true;
+ if(hasPendingLocal){localStorage.setItem(FIELD_PENDING_KEY,'1');scheduleFieldCloudSync();}
  fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);if(fieldSyncDiagnostics.status==='確認中')fieldSyncDiagnostics.status='クラウド同期済み';renderFieldSyncDiagnostics();
  return fieldCloudRevision;
 }
@@ -645,6 +653,8 @@ async function processPhotoPdfReturn(){
   console.error('Photo PDF return failed',e);
  }
 }
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');});
+window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
  await initializeFieldCloud();
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
