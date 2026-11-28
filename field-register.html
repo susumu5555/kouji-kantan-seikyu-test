@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v199</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v200</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -566,7 +566,7 @@ window.toggleCompleted=function(pid){
 };
 let projectPage=1;
 const fieldPageParams=new URLSearchParams(location.search);
-let projectListMode=(fieldPageParams.get('list')==='completed'||fieldPageParams.get('page')==='completed'||(!fieldPageParams.has('list')&&!fieldPageParams.has('page')&&localStorage.getItem('koujiFieldProjectListMode_v1')==='completed'))?'completed':'open';
+let projectListMode=(fieldPageParams.get('page')==='completed'||fieldPageParams.get('list')==='completed'||(!fieldPageParams.has('page')&&!fieldPageParams.has('list')&&localStorage.getItem('koujiFieldProjectListMode_v1')==='completed'))?'completed':'open';
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
@@ -698,7 +698,7 @@ async function showFieldRecoveryIfNeeded(){
   }catch(e){recoverButton.disabled=false;alert('復元できませんでした。データは変更していません。\n'+(e.message||e));}
  };
 }
-function render(){const params=new URLSearchParams(location.search);if(params.has('list'))projectListMode=params.get('list')==='completed'?'completed':'open';else if(params.get('page')==='completed')projectListMode='completed';const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+function render(){const params=new URLSearchParams(location.search);if(params.get('page')==='completed'||params.get('list')==='completed')projectListMode='completed';else if(params.get('page')==='cases'||params.get('list')==='open')projectListMode='open';const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
