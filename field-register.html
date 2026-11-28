@@ -61,7 +61,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v195</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v196</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -103,6 +103,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <div id="selectedProjectInfo" class="item empty">現場を選択すると、現場情報がここに表示されます。</div>
 <div id="projectPdfList"></div>
 <div id="pdfSaveStatus" class="small" aria-live="polite"></div>
+<div id="dimensionList" hidden aria-hidden="true"></div>
 
 
 <div class="row"><div><label>記録日</label><input id="dDate" type="date"></div><div><label>記録項目</label><input id="dLabel" placeholder="例：配管長・穴位置"></div></div>
