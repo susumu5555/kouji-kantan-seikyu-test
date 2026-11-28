@@ -13,11 +13,15 @@
 <label for="email">メールアドレス</label><input id="email" type="email" autocomplete="username">
 <label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password">
 <div class="row"><button id="login">ログイン</button><button class="secondary" id="sendReset">パスワード設定メールを送る</button><button class="secondary" id="logout">ログアウト</button></div><p id="authStatus" class="status">未ログイン</p></div>
-<div class="card"><h2>3. 既存データの初回移行</h2><div class="warn">重要：先に現場データ・見積請求データのバックアップをそれぞれ保存してください。ここではクラウドに同じキーのデータが既にある場合、絶対に上書きしません。移行は空の保存領域に限ります。</div>
+<div class="card"><h2>3. パスワードの設定・変更</h2><p class="muted">ログイン中のアカウントのパスワードをここで設定できます。8文字以上を入力してください。</p>
+<label for="newPassword">新しいパスワード</label><input id="newPassword" type="password" autocomplete="new-password">
+<label for="confirmPassword">新しいパスワード（確認）</label><input id="confirmPassword" type="password" autocomplete="new-password">
+<button id="updatePassword">パスワードを設定・変更</button><p id="passwordStatus" class="status">ログイン後に利用できます。</p></div>
+<div class="card"><h2>4. 既存データの初回移行</h2><div class="warn">重要：先に現場データ・見積請求データのバックアップをそれぞれ保存してください。ここではクラウドに同じキーのデータが既にある場合、絶対に上書きしません。移行は空の保存領域に限ります。</div>
 <p>現在の端末に保存されているデータを確認し、Supabaseにまだデータがない場合だけ初回登録します。別端末のデータを自動で統合する機能ではありません。</p>
 <button id="inspect" class="secondary">移行前データとクラウドを確認</button><div id="preview" class="status">未確認</div>
 <div class="row"><button id="migrate" disabled>空のクラウド領域に初回登録</button></div><p id="migrationStatus" class="status">未実行</p></div>
-<div class="card"><h2>4. 現在の同期状態</h2><p>この設定ページは接続・ログイン・初回移行の準備用です。通常画面（現場登録・見積作成）へのリアルタイム同期は、アプリ本体への接続設定反映後に有効になります。</p><p class="muted">現時点で同期済みとは表示しません。既存端末のデータは移行完了・照合まで削除しないでください。</p></div>
+<div class="card"><h2>5. 現在の同期状態</h2><p>この設定ページは接続・ログイン・初回移行の準備用です。通常画面（現場登録・見積作成）へのリアルタイム同期は、アプリ本体への接続設定反映後に有効になります。</p><p class="muted">現時点で同期済みとは表示しません。既存端末のデータは移行完了・照合まで削除しないでください。</p></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -30,6 +34,7 @@ $('saveConfig').onclick=()=>{const url=$('url').value.trim(),key=$('key').value.
 $('clearConfig').onclick=async()=>{if(!confirm('この端末に保存したSupabase接続設定を削除しますか？クラウドのデータは削除されません。'))return;if(client)await client.auth.signOut();localStorage.removeItem(CONFIG_KEY);client=null;session=null;setStatus('configStatus','未設定');setStatus('authStatus','未ログイン')};
 $('login').onclick=async()=>{if(!client&&!connect())return;const email=$('email').value.trim(),password=$('password').value;if(!email||!password){alert('メールアドレスとパスワードを入力してください');return}const {data,error}=await client.auth.signInWithPassword({email,password});if(error){setStatus('authStatus','ログイン失敗：'+error.message);return}session=data.session;setStatus('authStatus','ログイン中：'+data.user.email);};
 $('sendReset').onclick=async()=>{if(!client&&!connect())return;const email=$('email').value.trim();if(!email){setStatus('authStatus','先にメールアドレスを入力してください。');return}const redirectTo=location.origin+location.pathname.replace(/shared-setup\\.html$/,'set-password.html');const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});if(error){setStatus('authStatus','メール送信に失敗：'+error.message);return}setStatus('authStatus','パスワード設定用メールを送信しました。メール内のリンクを開いて新しいパスワードを設定してください。迷惑メールも確認してください。')};
+$('updatePassword').onclick=async()=>{try{if(!client&&!connect())throw Error('Supabase接続設定がありません');const {data,error:sessionError}=await client.auth.getSession();if(sessionError)throw sessionError;if(!data.session)throw Error('先にログインしてください');const p=$('newPassword').value,p2=$('confirmPassword').value;if(p.length<8)throw Error('パスワードは8文字以上にしてください');if(p!==p2)throw Error('2つのパスワードが一致しません');$('updatePassword').disabled=true;const {error}=await client.auth.updateUser({password:p});if(error)throw error;$('newPassword').value='';$('confirmPassword').value='';setStatus('passwordStatus','パスワードを設定・変更しました。次回から新しいパスワードでログインできます。')}catch(e){setStatus('passwordStatus','設定できません：'+e.message)}finally{$('updatePassword').disabled=false}};
 $('logout').onclick=async()=>{if(!client)return;const {error}=await client.auth.signOut();session=null;setStatus('authStatus',error?'ログアウト失敗：'+error.message:'ログアウトしました')};
 async function currentSession(){if(!client&&!connect())throw Error('接続設定がありません');const {data,error}=await client.auth.getSession();if(error)throw error;session=data.session;if(!session)throw Error('先にログインしてください');return session}
 async function cloudDoc(k){const {data,error}=await client.from('shared_documents').select('document_key,revision,updated_at,payload').eq('document_key',k).maybeSingle();if(error)throw error;return data}
