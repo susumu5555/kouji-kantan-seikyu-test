@@ -140,7 +140,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 .storage-panel{max-width:760px;margin:18px auto}.storage-status{font-weight:750;margin:12px 0}.storage-meter{height:18px;border-radius:20px;background:#e8edf1;overflow:hidden}.storage-meter-fill{height:100%;width:0;background:#29965b;transition:width .2s}.storage-meter-fill.warn{background:#e2a12b}.storage-meter-fill.danger{background:#d64a42}.storage-numbers{display:flex;justify-content:space-between;align-items:center;margin:9px 0 16px}.storage-numbers strong{font-size:24px}.storage-details{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0}.storage-details>div{background:#f3f6f8;border-radius:10px;padding:12px}.storage-details span{display:block;font-size:11px;color:#66747d}.storage-details strong{display:block;margin-top:5px;font-size:15px}.storage-warning{padding:12px;border-radius:10px;margin:12px 0;font-weight:750;background:#fff3d9;color:#855000;border:1px solid #f0ce83}.storage-warning.danger{background:#fff0ef;color:#a3342b;border-color:#f0b7b2}@media(max-width:560px){.storage-details{grid-template-columns:1fr}.storage-numbers strong{font-size:20px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v213</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v214</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -692,6 +692,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
 const initialParams=new URLSearchParams(location.search);
+if(initialParams.get('diagnostics')==='1')document.getElementById('syncDiagnostics').classList.remove('hidden');
 const initialPage=initialParams.get('page')||(initialParams.has('list')?'cases':null);
 const pageToShow=initialPage==='completed'?'cases':initialPage;
 if(['register','cases','schedule','ledger','storage'].includes(pageToShow)){document.getElementById(pageToShow).classList.remove('hidden');}
