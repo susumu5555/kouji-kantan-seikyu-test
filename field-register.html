@@ -336,13 +336,27 @@ async function mergeFieldDataSafely(){
  localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
  fieldSyncDiagnostics.status='端末・クラウドの不足データを統合済み';fieldSyncDiagnostics.localRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);renderFieldSyncDiagnostics();render();return true;
 }
+async function runScheduledFieldCloudSync(reason){
+ while(fieldSyncInProgress)await new Promise(resolve=>setTimeout(resolve,250));
+ await syncFieldCloud(reason);
+}
+async function runFinalFieldCloudSync(){
+ while(fieldSyncInProgress)await new Promise(resolve=>setTimeout(resolve,250));
+ await syncFieldCloud('30分後の定期同期');
+ if(localStorage.getItem(FIELD_PENDING_KEY)==='1'){
+  updateFieldSyncState('最終同期を再試行します（1分後）');
+  fieldSyncTimers=[setTimeout(runFinalFieldCloudSync,60000)];
+ }else{
+  fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
+ }
+}
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
  fieldSyncWindowStarted=true;
  fieldSyncTimers=[
-  setTimeout(()=>syncFieldCloud('5分後の定期同期'),300000),
-  setTimeout(()=>syncFieldCloud('15分後の定期同期'),900000),
-  setTimeout(()=>{syncFieldCloud('30分後の定期同期');fieldSyncTimers=[];fieldSyncWindowStarted=false;},1800000)
+  setTimeout(()=>runScheduledFieldCloudSync('5分後の定期同期'),300000),
+  setTimeout(()=>runScheduledFieldCloudSync('15分後の定期同期'),900000),
+  setTimeout(()=>runFinalFieldCloudSync(),1800000)
  ];
  updateFieldSyncState('端末保存済み・クラウド同期待ち（5分後／15分後／30分後）');
 }
