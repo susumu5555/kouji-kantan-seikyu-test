@@ -311,7 +311,8 @@ $('pWorkDate').addEventListener('change',()=>{const v=$('pWorkDate').value;if(v)
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const projectName=x=>db.projects.find(p=>p.id===x)?.name||'現場未登録';
 function showPage(page){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('hidden',x.id!==page));render()}
-const initialPage=new URLSearchParams(location.search).get('page');
+const initialParams=new URLSearchParams(location.search);
+const initialPage=initialParams.get('page')||(initialParams.has('list')?'cases':null);
 const pageToShow=initialPage==='completed'?'cases':initialPage;
 if(['register','cases','schedule','ledger'].includes(pageToShow)){document.getElementById(pageToShow).classList.remove('hidden');}
 else{location.replace('./');}
