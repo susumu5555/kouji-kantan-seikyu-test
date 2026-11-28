@@ -274,8 +274,44 @@ window.toggleCompleted=function(pid){
   const formatted=date.replaceAll('-','/');
   if(!confirm('次の内容で工事完了にしますか？\\n\\n現場：'+p.name+'\\n工事完了日：'+formatted+'\\n\\n確認後、この現場は「工事完了履歴」に移動します。'))return;
   const button=document.getElementById('confirmCompleteProject');button.disabled=true;
-  p.completed=true;p.completedDate=date;p.completedAt=new Date(y,m-1,d,12,0,0).toISOString();
-  try{await save();projectListMode='completed';history.replaceState(null,'',location.pathname+'?page=completed');modal.remove();render()}catch(e){p.completed=false;p.completedAt=null;p.completedDate=null;alert('クラウドへの保存を確認できなかったため、完了処理を取り消しました。再度お試しください。')}
+  const completedProject={...p,completed:true,completedDate:date,completedAt:new Date(y,m-1,d,12,0,0).toISOString()};
+  try{
+   await fieldCloudQueue.catch(()=>{});
+   const cloud=await window.KoujiCloudReady;
+   if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+   let stored=false,lastError=null;
+   for(let attempt=0;attempt<10;attempt++){
+    const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+    if(latest.error)throw latest.error;
+    if(!latest.data)throw Error('クラウドの現場データが見つかりません');
+    const remote=latest.data.payload;
+    if(!remote||!Array.isArray(remote.projects))throw Error('クラウドの現場データ形式が不正です');
+    const payload={...remote};
+    for(const collection of ['projects','visits','dimensions','schedules','pdfs']){
+     const remoteItems=Array.isArray(remote[collection])?remote[collection]:[];
+     const localItems=Array.isArray(db[collection])?db[collection]:[];
+     const remoteIds=new Set(remoteItems.map(item=>item&&item.id).filter(Boolean));
+     payload[collection]=remoteItems.concat(localItems.filter(item=>item&&item.id&&!remoteIds.has(item.id)));
+    }
+    const targetIndex=payload.projects.findIndex(item=>item&&item.id===pid);
+    if(targetIndex>=0)payload.projects[targetIndex]={...payload.projects[targetIndex],...completedProject};
+    else payload.projects.push(completedProject);
+    const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:Number(latest.data.revision)});
+    if(!error){
+     const row=Array.isArray(result)?result[0]:result;
+     if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+     db=payload;fieldCloudRevision=Number(row.revision);
+     localStorage.setItem(key,JSON.stringify(db));
+     localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+     stored=true;break;
+    }
+    lastError=error;
+    if(!String(error.message||error).includes('revision_conflict'))throw error;
+    await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
+   }
+   if(!stored)throw lastError||Error('クラウドの更新が続いています。再度お試しください');
+   projectListMode='completed';projectPage=1;history.replaceState(null,'',location.pathname+'?page=completed');modal.remove();render();
+  }catch(e){button.disabled=false;alert('クラウドに工事完了を保存できなかったため、未完了のままにしています。\\n'+(e.message||e))}
  };
 };
 let projectPage=1;
