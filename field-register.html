@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v181</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v182</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -85,6 +85,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 </section>
 
 <section id="cases" class="page hidden">
+
+<div class="panel">
+<h2>現場データのバックアップ</h2>
+<p class="small">登録済み現場・訪問履歴・寸法記録・工事予定・写真PDFの管理情報をバックアップします。毎週1回、アプリを開いた際にダウンロードします。</p>
+<div class="actions"><button type="button" class="secondary" id="fieldBackupButton">バックアップ</button><button type="button" class="secondary" id="fieldRestoreButton">復元</button><input type="file" id="fieldRestoreFile" accept=".json,application/json" hidden></div>
+<div id="fieldBackupStatus" class="small" role="status" style="margin-top:8px"></div>
+</div>
 
 <div class="panel">
 <h2 id="casesTitle">未完了現場</h2>
@@ -444,6 +451,30 @@ function startFieldRemoteUpdates(){
   fieldRemoteChannel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_documents',filter:'document_key=eq.field_data'},()=>checkRemoteFieldUpdates('リアルタイム通知')).subscribe();
  }
 }
+
+const FIELD_BACKUP_LAST_KEY='koujiFieldAutoBackupLastAt_v1';
+function buildFieldBackup(){return new Blob([JSON.stringify({format:'kouji-field-backup',version:1,createdAt:new Date().toISOString(),appVersion:'v182',data:cloneFieldData(db)},null,2)],{type:'application/json'});}
+function downloadFieldBackup(auto=false){
+ try{const blob=buildFieldBackup(),url=URL.createObjectURL(blob),a=document.createElement('a'),d=new Date(),stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('');
+ a.href=url;a.download='工事管理_現場バックアップ_'+stamp+'.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+ if(auto)localStorage.setItem(FIELD_BACKUP_LAST_KEY,String(Date.now()));
+ const status=document.getElementById('fieldBackupStatus');if(status)status.textContent=(auto?'週次自動バックアップを開始しました。':'バックアップを作成しました。')+' ダウンロードフォルダを確認してください。';return true;
+ }catch(e){const status=document.getElementById('fieldBackupStatus');if(status)status.textContent='バックアップできませんでした：'+(e.message||e);return false;}
+}
+document.getElementById('fieldBackupButton')?.addEventListener('click',()=>downloadFieldBackup(false));
+document.getElementById('fieldRestoreButton')?.addEventListener('click',()=>document.getElementById('fieldRestoreFile').click());
+document.getElementById('fieldRestoreFile')?.addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return;const status=document.getElementById('fieldBackupStatus');
+ try{const parsed=JSON.parse(await file.text()),backup=parsed?.format==='kouji-field-backup'?parsed.data:parsed;
+ if(!backup||!Array.isArray(backup.projects))throw Error('現場データのバックアップとして認識できません');
+ if(!confirm('バックアップファイルを読み込みます。現在のデータは削除せず、同じIDのデータは現在の内容を優先し、不足しているデータだけを追加します。続けますか？'))return;
+ const merged=cloneFieldData(db);
+ for(const k of ['projects','visits','dimensions','schedules','pdfs']){const current=Array.isArray(merged[k])?merged[k]:[],seen=new Set(current.map(x=>x?.id).filter(Boolean));for(const item of (Array.isArray(backup[k])?backup[k]:[]))if(item?.id&&!seen.has(item.id)){seen.add(item.id);current.push(item);}merged[k]=current;}
+ db=merged;await save();render();status.textContent='復元が完了しました。不足していたデータを追加しました。既存データは削除していません。';
+ }catch(e){status.textContent='復元できませんでした：'+(e.message||e);}finally{event.target.value='';}
+});
+function runWeeklyFieldBackup(){const last=Number(localStorage.getItem(FIELD_BACKUP_LAST_KEY)||0);if(!last||Date.now()-last>=7*24*60*60*1000)setTimeout(()=>downloadFieldBackup(true),1800);}
+
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteFieldUpdates('画面復帰時');});
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 $('pWorkDate').addEventListener('change',()=>{const v=$('pWorkDate').value;if(v){const y=v.split('-')[0];if(y.length!==4||Number(y)<1||Number(y)>9999){$('pWorkDate').setCustomValidity('工事施工日の年は西暦4桁で入力してください。');$('pWorkDate').reportValidity();$('pWorkDate').value='';}else{$('pWorkDate').setCustomValidity('');}}});
@@ -770,6 +801,7 @@ window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KE
  if(localStorage.getItem(FIELD_PENDING_KEY)==='1')await syncFieldCloud('アプリ再起動時の未同期データ確認');
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
  render();
+ runWeeklyFieldBackup();
  /* 古い退避データは自動復元候補として表示しない。バックアップ自体は保持する。 */
  if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
  await processPhotoPdfReturn();
