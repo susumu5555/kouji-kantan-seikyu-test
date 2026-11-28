@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v170</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v171</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -303,7 +303,7 @@ async function initializeFieldCloud(){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
-   fieldSyncDiagnostics.status='端末データの更新番号がクラウドより新しいため同期を保留（端末データ退避済み）';fieldSyncDiagnostics.backupKey=backupKey;db=cloudData;fieldCloudRevision=Number(docResult.data.revision);fieldCloudBaseData=cloneFieldData(cloudData);fieldCloudReady=false;renderFieldSyncDiagnostics();return fieldCloudRevision;
+   fieldSyncDiagnostics.status='端末データの更新番号がクラウドより新しいため同期を保留（端末データを表示・退避済み）';fieldSyncDiagnostics.backupKey=backupKey;db=localData;fieldCloudRevision=Number(docResult.data.revision);fieldCloudBaseData=cloneFieldData(cloudData);fieldCloudReady=false;renderFieldSyncDiagnostics();return fieldCloudRevision;
   }else{
    if(hasPendingLocal&&savedSyncBase){db=rebaseFieldChanges(JSON.parse(savedSyncBase),localData,cloudData);fieldSyncDiagnostics.status='前回の未同期データを保持・再同期待ち';}else{db=cloudData;fieldSyncDiagnostics.status=fieldSyncDiagnostics.localRevision===Number(docResult.data.revision)?'端末とクラウドの更新番号は一致':'クラウドから最新データを読み込み';}fieldCloudRevision=Number(docResult.data.revision);
   }
