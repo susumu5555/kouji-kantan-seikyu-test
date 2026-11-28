@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v217</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v218</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="downloadFullBackupButton">全データを端末にバックアップ</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px" disabled>バックアップ確認後に全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><label style="display:block;margin-top:8px"><input type="checkbox" id="backupSavedConfirm" disabled> バックアップファイルを端末に保存したことを確認しました</label><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
 
@@ -227,18 +227,19 @@ document.getElementById('downloadFullBackupButton')?.addEventListener('click',as
    const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');reader.onerror=()=>reject(reader.error||new Error('PDF変換失敗'));reader.readAsDataURL(blob);});
    pdfFiles.push({storagePath:item.storagePath,fileName:item.fileName||item.name||item.storagePath.split('/').pop(),contentType:blob.type||'application/pdf',base64});
   }
-  const backup={format:'kouji-field-backup-v1',createdAt:new Date().toISOString(),sourceRevision:doc.revision,data:doc.payload,pdfFiles};
+  const backup={format:'kouji-field-backup-v1',createdAt:new Date().toISOString(),sourceRevision:Number(doc.revision),data:doc.payload,pdfFiles};
   const file=new Blob([JSON.stringify(backup)],{type:'application/json'});
   const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='kouji-test-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   status.textContent='バックアップファイルを作成し、ダウンロードを開始しました。PDF '+pdfFiles.length+'件を含みます。ファイルが端末に保存されたことを確認してください。';
+  localStorage.setItem('koujiBackupSourceRevision_v1',String(doc.revision));
   savedCheck.disabled=false;
  }catch(e){status.textContent='バックアップ作成失敗：'+(e.message||e)+'\\n共有データ・既存PDFは変更していません。';}
  finally{button.disabled=false;}
 });
 document.getElementById('backupSavedConfirm')?.addEventListener('change',e=>{
  document.getElementById('resetAllTestDataButton').disabled=!e.target.checked;
- if(e.target.checked)localStorage.setItem('koujiBackupConfirmedAt_v1',new Date().toISOString());
- else localStorage.removeItem('koujiBackupConfirmedAt_v1');
+ if(e.target.checked&&localStorage.getItem('koujiBackupSourceRevision_v1'))localStorage.setItem('koujiBackupConfirmedAt_v1',new Date().toISOString());
+ else{localStorage.removeItem('koujiBackupConfirmedAt_v1');localStorage.removeItem('koujiBackupSourceRevision_v1');}
 });
 document.getElementById('resetAllTestDataButton')?.addEventListener('click',async()=>{
  const button=document.getElementById('resetAllTestDataButton'),status=document.getElementById('resetAllTestDataStatus');
@@ -252,6 +253,14 @@ document.getElementById('resetAllTestDataButton')?.addEventListener('click',asyn
   if(readError)throw readError;if(!doc?.payload)throw Error('クラウドの現場データが見つかりません。初期化を中止しました');
   const original=doc.payload;
   if(!localStorage.getItem('koujiBackupConfirmedAt_v1'))throw Error('先に「全データを端末にバックアップ」を実行し、保存確認にチェックしてください');
+  const backupRevision=Number(localStorage.getItem('koujiBackupSourceRevision_v1'));
+  if(!Number.isFinite(backupRevision)||backupRevision!==Number(doc.revision)){
+   localStorage.removeItem('koujiBackupConfirmedAt_v1');
+   document.getElementById('backupSavedConfirm').checked=false;
+   document.getElementById('backupSavedConfirm').disabled=true;
+   button.disabled=true;
+   throw Error('バックアップ後にクラウドデータが更新されています。最新データを含むバックアップをもう一度作成してください。現在のクラウド revision：'+doc.revision+'／バックアップ revision：'+backupRevision);
+  }
   const paths=[...new Set((original.pdfs||[]).map(x=>x.storagePath).filter(Boolean))];
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
   const token='reset-'+stamp+'-'+Math.random().toString(36).slice(2,9);
