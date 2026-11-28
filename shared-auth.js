@@ -23,7 +23,8 @@
   gate.innerHTML=`<div class="box"><h2>工事管理アプリ・ログイン</h2><p>登録済みのチームアカウントでログインしてください。パソコンとスマートフォンで同じアカウントを使用できます。</p><div id="kouji-auth-config" class="status">接続設定を確認しています…</div><label for="kouji-auth-email">メールアドレス</label><input id="kouji-auth-email" type="email" autocomplete="username"><label for="kouji-auth-password">パスワード</label><input id="kouji-auth-password" type="password" autocomplete="current-password"><button id="kouji-auth-login">ログイン</button><button id="kouji-auth-logout" class="secondary" type="button">ログアウト</button><p class="small">初回はホームの「共有設定」でProject URLとPublishable keyを保存してください。</p><div id="kouji-auth-status" class="status">認証を確認しています…</div></div>`;
   document.body.appendChild(gate);
   const $=id=>document.getElementById(id), status=(msg,error=false)=>{const el=$('kouji-auth-status');el.textContent=msg;el.classList.toggle('error',error)};
-  let client=null, busy=false;
+  let client=null, busy=false, resolveCloudReady;
+  window.KoujiCloudReady=new Promise(resolve=>{resolveCloudReady=resolve});
   function show(){gate.style.display='flex'}
   function hide(){gate.style.display='none'}
   function getConfig(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'null')}catch(_){return null}}
@@ -42,6 +43,7 @@
     if(!data.session)return false;
     const member=await checkMember(data.session.user);
     window.KoujiCloud={client,user:data.session.user,member,revision:{field_data:null,invoice_data:null},ready:true};
+    resolveCloudReady(window.KoujiCloud);
     status('ログイン中：'+(member.display_name||data.session.user.email)+'（'+member.role+'）');
     hide();return true;
   }
@@ -65,6 +67,7 @@
       const {data,error}=await client.auth.signInWithPassword({email,password});if(error)throw error;
       const member=await checkMember(data.user);
       window.KoujiCloud={client,user:data.user,member,revision:{field_data:null,invoice_data:null},ready:true};
+      resolveCloudReady(window.KoujiCloud);
       status('ログインしました：'+(member.display_name||data.user.email));hide();
     }catch(e){status('ログインできません：'+e.message,true)}
     finally{busy=false;$('kouji-auth-login').disabled=false}
