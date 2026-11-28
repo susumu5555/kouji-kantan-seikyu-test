@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v182</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v183</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -473,7 +473,7 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
  db=merged;await save();render();status.textContent='復元が完了しました。不足していたデータを追加しました。既存データは削除していません。';
  }catch(e){status.textContent='復元できませんでした：'+(e.message||e);}finally{event.target.value='';}
 });
-function runWeeklyFieldBackup(){const last=Number(localStorage.getItem(FIELD_BACKUP_LAST_KEY)||0);if(!last||Date.now()-last>=7*24*60*60*1000)setTimeout(()=>downloadFieldBackup(true),1800);}
+function runWeeklyFieldBackup(){const shouldRun=()=>{const last=Number(localStorage.getItem(FIELD_BACKUP_LAST_KEY)||0);return !last||Date.now()-last>=7*24*60*60*1000;};if(shouldRun())setTimeout(()=>{if(shouldRun())downloadFieldBackup(true);},1800);}
 
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteFieldUpdates('画面復帰時');});
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -802,6 +802,9 @@ window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KE
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
  render();
  runWeeklyFieldBackup();
+ const backupAction=new URLSearchParams(location.search).get('backupAction');
+ if(backupAction==='backup')setTimeout(()=>document.getElementById('fieldBackupButton')?.click(),250);
+ if(backupAction==='restore')setTimeout(()=>document.getElementById('fieldRestoreButton')?.click(),250);
  /* 古い退避データは自動復元候補として表示しない。バックアップ自体は保持する。 */
  if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
  await processPhotoPdfReturn();
