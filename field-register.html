@@ -805,6 +805,29 @@ window.openSavedPdf=async function(id){
   const u=URL.createObjectURL(record.blob);const w=window.open(u,'_blank');if(!w){const a=document.createElement('a');a.href=u;a.download=record.fileName||meta.fileName;a.click();}setTimeout(()=>URL.revokeObjectURL(u),60000);
  }catch(e){alert('PDFを開けませんでした：'+(e.message||e));}
 };
+let pendingPhotoPdfUploadBusy=false;
+async function syncPendingPhotoPdfUploads(){
+ if(pendingPhotoPdfUploadBusy||!fieldCloudReady)return;
+ const cloud=window.KoujiCloud;if(!cloud?.ready||!cloud.user?.id)return;
+ pendingPhotoPdfUploadBusy=true;
+ let uploaded=0,failed=0;
+ try{
+  const pending=(db.pdfs||[]).filter(x=>!x.storagePath);
+  for(const meta of pending){
+   try{
+    const record=await getPdfRecord(meta.id);
+    if(!record?.blob)continue;
+    const storagePath=cloud.user.id+'/'+meta.projectId+'/'+meta.id+'.pdf';
+    const {error}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:true});
+    if(error)throw error;
+    meta.storagePath=storagePath;uploaded++;
+   }catch(e){failed++;console.warn('Pending photo PDF upload failed',meta.id,e);}
+  }
+  if(uploaded){await save();renderProjectPdfs();}
+  if(failed)$('pdfSaveStatus').textContent='未送信の写真PDF '+failed+'件は端末に保持しています。通信復帰後に再送します。';
+  else if(uploaded)$('pdfSaveStatus').textContent='未送信だった写真PDF '+uploaded+'件をクラウドへ送信しました。';
+ }finally{pendingPhotoPdfUploadBusy=false;}
+}
 async function registerPhotoPdfImmediately(record,category,projectId){
  let meta=(db.pdfs||[]).find(x=>x.id===record.id);
  if(!meta){meta={id:record.id,projectId,category:['report','support'].includes(category)?category:'unclassified',fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath:null};db.pdfs.push(meta);}
@@ -844,10 +867,10 @@ async function processPhotoPdfReturn(){
  try{const record=await getPdfRecord(handoff.recordId);if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');await registerPhotoPdfImmediately(record,handoff.category,handoff.projectId);localStorage.removeItem('genbaPhotoPdfReturn_v1');$('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});}
  catch(e){$('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、一覧への反映を完了できませんでした：'+(e.message||e);console.error('Photo PDF return failed',e);}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});\nwindow.addEventListener('online',()=>syncPendingPhotoPdfUploads());
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
- await initializeFieldCloud();
+ await initializeFieldCloud();\n await syncPendingPhotoPdfUploads();
  const adminDiagnostics=new URLSearchParams(location.search).get('admin')==='diagnostics';
  if(adminDiagnostics){
   document.getElementById('syncDiagnostics').classList.remove('hidden');
