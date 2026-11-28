@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v181</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v182</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -549,7 +549,7 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
   const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
-  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">現場ID：KJ-${esc(String(p.id).toUpperCase())}<br>${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
  }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
