@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v162</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v163</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -168,7 +168,7 @@ if(!Array.isArray(db.pdfs))db.pdfs=[];
 let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false,fieldCloudBaseData=null;
 let fieldSyncDiagnostics={status:'確認中',localRevision:0,cloudRevision:null,localCounts:null,cloudCounts:null,backupKey:null};
 const fieldDataCounts=data=>({projects:Array.isArray(data?.projects)?data.projects.length:0,visits:Array.isArray(data?.visits)?data.visits.length:0,dimensions:Array.isArray(data?.dimensions)?data.dimensions.length:0,schedules:Array.isArray(data?.schedules)?data.schedules.length:0,pdfs:Array.isArray(data?.pdfs)?data.pdfs.length:0});
-function renderFieldSyncDiagnostics(){const el=document.getElementById('syncDiagnosticsContent');if(!el)return;const d=fieldSyncDiagnostics;const fmt=x=>x?'現場 '+x.projects+'件／訪問 '+x.visits+'件／寸法 '+x.dimensions+'件／予定 '+x.schedules+'件／PDF '+x.pdfs+'件':'未取得';el.textContent='状態：'+d.status+'\n端末：revision '+d.localRevision+'\n'+fmt(d.localCounts)+'\nクラウド：revision '+(d.cloudRevision===null?'未取得':d.cloudRevision)+'\n'+fmt(d.cloudCounts)+(d.backupKey?'\n端末データ退避先：'+d.backupKey:'');}
+function renderFieldSyncDiagnostics(){const el=document.getElementById('syncDiagnosticsContent');if(!el)return;const d=fieldSyncDiagnostics;const fmt=x=>x?'現場 '+x.projects+'件／訪問 '+x.visits+'件／寸法 '+x.dimensions+'件／予定 '+x.schedules+'件／PDF '+x.pdfs+'件':'未取得';const stamp=localStorage.getItem('koujiFieldLastSyncAt_v1');const stampText=stamp?'\n最終同期成功：'+new Date(Number(stamp)).toLocaleString('ja-JP'):'\n最終同期成功：まだありません';el.textContent='状態：'+d.status+'\n端末：revision '+d.localRevision+'\n'+fmt(d.localCounts)+'\nクラウド：revision '+(d.cloudRevision===null?'未取得':d.cloudRevision)+'\n'+fmt(d.cloudCounts)+stampText+(d.backupKey?'\n端末データ退避先：'+d.backupKey:'');}
 const cloneFieldData=value=>JSON.parse(JSON.stringify(value));
 function rebaseFieldChanges(base,local,remote){
  const merged={...remote};
@@ -238,7 +238,7 @@ async function syncFieldCloud(reason='同期'){
    const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:fieldCloudRevision});
    if(!error){
     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');
-    fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+    fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));localStorage.setItem('koujiFieldLastSyncAt_v1',String(Date.now()));fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(payload);
     if(JSON.stringify(db)===snapshotText){
      localStorage.setItem(key,JSON.stringify(payload));
      if(reason==='8分後の定期同期'){
