@@ -62,9 +62,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v204</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v205</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
+<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div></section>
 
 <section id="register" class="page hidden">
 
@@ -708,6 +708,11 @@ async function showFieldRecoveryIfNeeded(){
   }catch(e){recoverButton.disabled=false;alert('復元できませんでした。データは変更していません。\n'+(e.message||e));}
  };
 }
+function renderProjectInventory(){
+ const el=document.getElementById('projectInventory');if(!el)return;
+ const rows=(db.projects||[]).map((p,i)=>({i:i+1,name:p.name||'（名称なし）',id:p.id,completed:p.completed,completedDate:p.completedDate||p.completedAt||''}));
+ el.textContent='【現場データ6件の状態確認】\\n'+rows.map(x=>x.i+'. '+x.name+'\\n  completed='+String(x.completed)+' / 完了日='+(x.completedDate||'なし')+'\\n  ID='+String(x.id)).join('\\n');
+}
 function render(){const params=new URLSearchParams(location.search);if(params.get('page')==='completed'||params.get('list')==='completed')projectListMode='completed';else if(params.get('page')==='cases'||params.get('list')==='open')projectListMode='open';const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
@@ -898,6 +903,7 @@ if(adminDiagnosticsEarly){
 }
 (async()=>{try{
  await initializeFieldCloud();
+ renderProjectInventory();
  await syncPendingPhotoPdfUploads();
  const adminDiagnostics=new URLSearchParams(location.search).get('admin')==='diagnostics';
  if(adminDiagnostics){
