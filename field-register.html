@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v191</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v192</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -637,20 +637,28 @@ function getFieldRecoveryCandidates(){
 }
 async function showFieldRecoveryIfNeeded(){
  const sources=getFieldRecoveryCandidates();
+ const types=['projects','visits','dimensions','schedules','pdfs'];
+ const labels={projects:'現場',visits:'訪問履歴',dimensions:'寸法記録',schedules:'工事予定',pdfs:'写真PDF'};
  const missingByType={};
- for(const k of ['projects','visits','dimensions','schedules','pdfs']){
+ for(const k of types){
   const existing=new Set((db[k]||[]).map(x=>x&&x.id).filter(Boolean));missingByType[k]=[];
   for(const source of sources)for(const item of source.data[k]||[])if(item&&item.id&&!existing.has(item.id)){existing.add(item.id);missingByType[k].push(item);}
  }
  const totalMissing=Object.values(missingByType).reduce((n,a)=>n+a.length,0);
- if(!totalMissing)return;
  let box=document.getElementById('fieldRecoveryPanel');
  if(!box){box=document.createElement('section');box.id='fieldRecoveryPanel';box.className='panel';const main=document.querySelector('main');main.insertBefore(box,main.firstChild);}
- box.innerHTML='<h2>退避データから不足データを復元できます</h2><p>端末のバックアップに、現在のデータにない項目が合計'+totalMissing+'件見つかりました。</p><p class="small">既存のクラウドデータは削除・上書きせず、不足しているデータだけを追加します。</p><button type="button" class="primary" id="recoverFieldDataButton">不足データを確認して復元</button>';
- document.getElementById('recoverFieldDataButton').onclick=async()=>{
-  const summary=['projects','visits','dimensions','schedules','pdfs'].map(k=>k+': 不足 '+missingByType[k].length+'件').join('\\n');
-  if(!confirm('退避データをクラウドと照合します。既存のクラウドデータは残し、不足分のみ追加します。\\n\\n'+summary+'\\n\\n復元を続けますか？'))return;
-  const button=document.getElementById('recoverFieldDataButton');button.disabled=true;
+ if(!sources.length){
+  box.innerHTML='<h2>端末バックアップ確認</h2><p>確認できる端末バックアップは見つかりませんでした。</p><p class="small">この表示だけでは、別の保存先にバックアップが存在しないとは判断できません。データの削除・同期は行っていません。</p>';
+  return;
+ }
+ const sourceSummary=sources.map(source=>'<div class="small">'+esc(source.key)+'：'+types.map(k=>labels[k]+' '+(source.data[k]||[]).length+'件').join(' / ')+'</div>').join('');
+ const missingSummary=types.map(k=>labels[k]+' '+missingByType[k].length+'件').join(' / ');
+ box.innerHTML='<h2>端末バックアップ確認</h2><p>バックアップ '+sources.length+'件を確認しました。</p>'+sourceSummary+'<hr><p><strong>現在のデータにない項目：'+totalMissing+'件</strong></p><p class="small">'+missingSummary+'</p>'+(totalMissing?'<p class="small">既存データを上書きせず、不足しているIDの項目だけを追加します。</p><button type="button" class="primary" id="recoverFieldDataButton">不足データを確認して復元</button>':'<p class="small">バックアップ内に、現在のデータにないIDの項目は見つかりませんでした。復元操作は行っていません。</p>');
+ const recoverButton=document.getElementById('recoverFieldDataButton');if(!recoverButton)return;
+ recoverButton.onclick=async()=>{
+  const summary=types.map(k=>labels[k]+': 不足 '+missingByType[k].length+'件').join('\n');
+  if(!confirm('退避データをクラウドと照合します。既存データは上書きせず、不足分のみ追加します。\n\n'+summary+'\n\n復元を続けますか？'))return;
+  recoverButton.disabled=true;
   try{
    const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
    let done=false,lastError=null;
@@ -659,23 +667,18 @@ async function showFieldRecoveryIfNeeded(){
     if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウドデータが見つかりません');
     const remote=latest.data.payload;if(!remote||!Array.isArray(remote.projects))throw Error('クラウドデータの形式が不正です');
     const merged={...remote};
-    for(const k of ['projects','visits','dimensions','schedules','pdfs']){
-     const current=Array.isArray(remote[k])?remote[k]:[];
-     const seen=new Set(current.map(x=>x&&x.id).filter(Boolean));
-     merged[k]=current.slice();
+    for(const k of types){
+     const current=Array.isArray(remote[k])?remote[k]:[];const seen=new Set(current.map(x=>x&&x.id).filter(Boolean));merged[k]=current.slice();
      for(const item of missingByType[k])if(!seen.has(item.id)){seen.add(item.id);merged[k].push(item);}
     }
     const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});
-    if(!error){
-     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('復元の保存結果を確認できません');
-     db=merged;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(db);localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;done=true;break;
-    }
+    if(!error){const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('復元の保存結果を確認できません');db=merged;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(db);localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;done=true;break;}
     lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
    }
    if(!done)throw lastError||Error('クラウド更新が続いています。時間をおいて再試行してください');
-   box.remove();projectPage=1;render();alert('退避データの復元が完了しました。未完了現場・工事完了履歴を確認してください。');
-  }catch(e){button.disabled=false;alert('復元できませんでした。データは変更していません。\\n'+(e.message||e));}
+   box.remove();projectPage=1;render();alert('退避データの復元が完了しました。訪問履歴などを確認してください。');
+  }catch(e){recoverButton.disabled=false;alert('復元できませんでした。データは変更していません。\n'+(e.message||e));}
  };
 }
 function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
