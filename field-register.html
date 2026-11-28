@@ -699,8 +699,14 @@ window.deleteProject=async function(projectId){
  }
 };
 window.changeProjectPage=function(delta){projectPage+=delta;renderProjects();window.scrollTo({top:0,behavior:'smooth'});};
+function loadProjectMemo(projectId){
+ const record=(db.dimensions||[]).find(x=>x.projectId===projectId&&x.memoOnly===true);
+ $('dMemo').value=record?.memo||'';
+ $('memoSaveStatus').textContent=record?'保存済みの備考を表示しています。':'備考を入力すると自動保存されます。';
+}
 window.openLedger=function(projectId){
  $('dProject').value=projectId;
+ loadProjectMemo(projectId);
  showPage('ledger');
 };
 $('projectSearch').oninput=()=>{projectPage=1;renderProjects()};
@@ -712,7 +718,7 @@ function renderSelectedProject(){
  box.className='item';
  box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">現場ID：${esc(p.managementNo||'番号未設定')}<br>顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
 }
-$('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
+$('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();loadProjectMemo($('dProject').value);$('pdfSaveStatus').textContent=''};
 function fillProjectSelects(){const id='dProject',old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old}
 let memoSaveTimer=null,memoSaveBusy=false;
 async function saveProjectMemo(){
