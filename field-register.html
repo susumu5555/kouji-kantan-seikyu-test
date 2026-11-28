@@ -60,7 +60,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 <body>
 <header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v192</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
+<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
 <section id="register" class="page hidden">
 
@@ -636,6 +636,7 @@ function getFieldRecoveryCandidates(){
  return sources;
 }
 async function showFieldRecoveryIfNeeded(){
+ if(new URLSearchParams(location.search).get('admin')!=='diagnostics')return;
  const sources=getFieldRecoveryCandidates();
  const types=['projects','visits','dimensions','schedules','pdfs'];
  const labels={projects:'現場',visits:'訪問履歴',dimensions:'寸法記録',schedules:'工事予定',pdfs:'写真PDF'};
@@ -799,6 +800,13 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
  await initializeFieldCloud();
+ const adminDiagnostics=new URLSearchParams(location.search).get('admin')==='diagnostics';
+ if(adminDiagnostics){
+  document.getElementById('syncDiagnostics').classList.remove('hidden');
+  document.querySelectorAll('main > section.page').forEach(el=>el.classList.add('hidden'));
+  const heading=document.createElement('div');heading.className='panel';heading.innerHTML='<h2>共有設定・詳細管理</h2><p class="small">同期診断と端末バックアップの確認画面です。</p><a class="home-button" href="./shared-setup.html" style="background:#173f59;color:#fff;border:0">← 共有設定に戻る</a>';
+  document.querySelector('main').insertBefore(heading,document.getElementById('syncDiagnostics'));
+ }
  await showFieldRecoveryIfNeeded();
  if(ensureProjectDisplayIds())await save();
  startFieldRemoteUpdates();
