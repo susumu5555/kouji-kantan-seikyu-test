@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v161</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v162</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -202,6 +202,7 @@ function rebaseFieldChanges(base,local,remote){
 }
 const FIELD_PENDING_KEY='koujiFieldPendingSync_v1';
 const FIELD_BASE_KEY='koujiFieldSyncBase_v1';
+const FIELD_FIRST_SYNC_OK_KEY='koujiFieldFirstSyncOk_v1';
 let fieldSyncTimers=[],fieldSyncWindowStarted=false,fieldSyncInProgress=false;
 function updateFieldSyncState(status){fieldSyncDiagnostics.status=status;fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);renderFieldSyncDiagnostics();}
 document.getElementById('manualFieldSyncButton')?.addEventListener('click',async()=>{
@@ -226,8 +227,8 @@ async function syncFieldCloud(reason='同期'){
   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');
   const localSnapshot=cloneFieldData(db),snapshotText=JSON.stringify(localSnapshot);
   const baseText=localStorage.getItem(FIELD_BASE_KEY),baseAtStart=baseText?JSON.parse(baseText):cloneFieldData(fieldCloudBaseData||localSnapshot);
-  if(reason==='30分後の定期同期'&&JSON.stringify(localSnapshot)===JSON.stringify(baseAtStart)){
-   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);
+  if(reason==='30分後の定期同期'&&localStorage.getItem(FIELD_FIRST_SYNC_OK_KEY)==='1'&&JSON.stringify(localSnapshot)===JSON.stringify(baseAtStart)){
+   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
    fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
    updateFieldSyncState('クラウド同期済み（8分後・30分後の確認完了）');
    return;
@@ -241,10 +242,10 @@ async function syncFieldCloud(reason='同期'){
     if(JSON.stringify(db)===snapshotText){
      localStorage.setItem(key,JSON.stringify(payload));
      if(reason==='8分後の定期同期'){
-      localStorage.setItem(FIELD_PENDING_KEY,'1');localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));
+      localStorage.setItem(FIELD_PENDING_KEY,'1');localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(payload));localStorage.setItem(FIELD_FIRST_SYNC_OK_KEY,'1');
       updateFieldSyncState('1回目同期済み・30分後に最終確認');
      }else{
-      localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);
+      localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
       fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
       updateFieldSyncState('クラウド同期済み（'+reason+'）');
      }
@@ -266,7 +267,7 @@ async function syncFieldCloud(reason='同期'){
 const save=()=>{
  const snapshot=JSON.stringify(db);localStorage.setItem(key,snapshot);
  if(fieldCloudReady){
-  if(localStorage.getItem(FIELD_PENDING_KEY)!=='1')localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(fieldCloudBaseData||db));
+  if(localStorage.getItem(FIELD_PENDING_KEY)!=='1'){localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(fieldCloudBaseData||db));localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);}
   localStorage.setItem(FIELD_PENDING_KEY,'1');scheduleFieldCloudSync();
  }
  return Promise.resolve();
