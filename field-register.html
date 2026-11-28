@@ -321,7 +321,7 @@ window.shareSavedPdf=async function(id){
   if(!record?.blob)throw Error('PDF本体がこの端末にもクラウドにも見つかりません');
   const file=new File([record.blob],meta.fileName||record.fileName||'現場写真.pdf',{type:'application/pdf'});
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:meta.fileName||'現場写真PDF'});}
-  else{const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);alert('PDFファイルを端末に保存しました。メール作成画面でファイルを添付してください。');}
+  else{const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
  }catch(e){if(e&&e.name==='AbortError')return;alert('PDFファイルを送れませんでした：'+(e.message||e));}
 };
 window.deleteSavedPdf=async function(id){
