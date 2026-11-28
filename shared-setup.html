@@ -10,7 +10,7 @@
 <label for="url">Project URL</label><input id="url" placeholder="https://xxxxxxxx.supabase.co" autocomplete="url">
 <label for="key">Publishable key</label><input id="key" placeholder="sb_publishable_..." autocomplete="off">
 <div class="row"><button id="saveConfig">接続設定を保存</button><button class="secondary" id="clearConfig">この端末の設定を消去</button></div><p id="configStatus" class="status">未設定</p></div>
-<div class="card"><h2>2. チームアカウントでログイン</h2><p class="muted">身内5人で1つのチームアカウントを共用します。全員が同じメールアドレスとパスワードを使用してください。端末ごとに個別アカウントを作る必要はありません。</p>
+<div class="card"><h2>2. チームアカウントでログイン</h2><p class="muted">Supabase Authenticationで作成したチームメンバーのメールアドレスとパスワードを使用します。</p>
 <label for="email">メールアドレス</label><input id="email" type="email" autocomplete="username">
 <label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password">
 <div class="row"><button id="login">ログイン</button><button class="secondary" id="sendReset">パスワード設定メールを送る</button><button class="secondary" id="logout">ログアウト</button></div><p id="authStatus" class="status">未ログイン</p></div>
@@ -23,7 +23,6 @@
 <button id="inspect" class="secondary">移行前データとクラウドを確認</button><div id="preview" class="status">未確認</div>
 <div class="row"><button id="migrate" disabled>空のクラウド領域に初回登録</button></div><p id="migrationStatus" class="status">未実行</p></div>
 <div class="card"><h2>5. 現在の同期状態</h2><p>この設定ページは接続・ログイン・初回移行の準備用です。通常画面（現場登録・見積作成）へのリアルタイム同期は、アプリ本体への接続設定反映後に有効になります。</p><p class="muted">現時点で同期済みとは表示しません。既存端末のデータは移行完了・照合まで削除しないでください。</p></div>
-<div class="card"><h2>6. 詳細管理（通常は非表示）</h2><p class="muted">同期の状態確認や、端末内に残っている退避バックアップの確認が必要な場合だけ開いてください。通常の現場画面には表示しません。</p><div class="row"><a href="./field-register.html?admin=diagnostics" style="display:inline-block;text-decoration:none;border-radius:9px;padding:12px 16px;background:#1457a6;color:#fff;font-weight:700;margin:8px 6px 0 0">同期診断・バックアップ確認を開く</a></div></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
