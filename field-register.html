@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v157</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v158</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div></section>
 
@@ -207,8 +207,8 @@ function updateFieldSyncState(status){fieldSyncDiagnostics.status=status;fieldSy
 function scheduleFieldCloudSync(){
  if(!fieldCloudReady||fieldSyncWindowStarted)return;
  fieldSyncWindowStarted=true;
- fieldSyncTimers=[setTimeout(()=>syncFieldCloud('15分後の定期同期'),900000),setTimeout(()=>{syncFieldCloud('30分後の定期同期');fieldSyncTimers=[];fieldSyncWindowStarted=false;},1800000)];
- updateFieldSyncState('端末保存済み・クラウド同期待ち（15分後／30分後）');
+ fieldSyncTimers=[setTimeout(()=>syncFieldCloud('8分後の定期同期'),480000),setTimeout(()=>{syncFieldCloud('30分後の定期同期');fieldSyncTimers=[];fieldSyncWindowStarted=false;},1800000)];
+ updateFieldSyncState('端末保存済み・クラウド同期待ち（8分後／30分後）');
 }
 async function syncFieldCloud(reason='同期'){
  if(!fieldCloudReady||fieldSyncInProgress||localStorage.getItem(FIELD_PENDING_KEY)!=='1')return;
