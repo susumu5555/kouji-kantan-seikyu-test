@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v178</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v179</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -379,6 +379,41 @@ async function initializeFieldCloud(){
  fieldSyncDiagnostics.cloudRevision=fieldCloudRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);if(fieldSyncDiagnostics.status==='確認中')fieldSyncDiagnostics.status='クラウド同期済み';renderFieldSyncDiagnostics();
  return fieldCloudRevision;
 }
+let fieldRemoteChannel=null,fieldRemotePoll=null,fieldRemoteCheckBusy=false;
+async function checkRemoteFieldUpdates(source='定期確認'){
+ if(fieldRemoteCheckBusy||!fieldCloudReady||document.visibilityState==='hidden')return;
+ fieldRemoteCheckBusy=true;
+ try{
+  const cloud=window.KoujiCloud;if(!cloud?.ready)return;
+  const {data,error}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
+  if(error)throw error;if(!data?.payload)return;
+  const remoteRevision=Number(data.revision||0);
+  if(remoteRevision<=Number(fieldCloudRevision||0))return;
+  if(localStorage.getItem(FIELD_PENDING_KEY)==='1'){
+   fieldSyncDiagnostics.status='別端末の更新を検知しました。端末の未同期データを保持して確認待ち';
+   fieldSyncDiagnostics.cloudRevision=remoteRevision;fieldSyncDiagnostics.cloudCounts=fieldDataCounts(data.payload);renderFieldSyncDiagnostics();return;
+  }
+  const remote=data.payload;
+  if(!remote||!Array.isArray(remote.projects)||!Array.isArray(remote.visits)||!Array.isArray(remote.dimensions)||!Array.isArray(remote.schedules))throw Error('別端末のデータ形式が不正です');
+  if(!Array.isArray(remote.pdfs))remote.pdfs=[];
+  db=cloneFieldData(remote);fieldCloudRevision=remoteRevision;fieldCloudBaseData=cloneFieldData(remote);
+  localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(remoteRevision));
+  fieldSyncDiagnostics.status='別端末の更新を自動反映しました（'+source+'）';
+  fieldSyncDiagnostics.localRevision=remoteRevision;fieldSyncDiagnostics.cloudRevision=remoteRevision;
+  fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(remote);
+  renderFieldSyncDiagnostics();render();
+ }catch(err){console.warn('Remote field update check failed',err);}
+ finally{fieldRemoteCheckBusy=false;}
+}
+function startFieldRemoteUpdates(){
+ const cloud=window.KoujiCloud;if(!cloud?.ready||!fieldCloudReady)return;
+ if(!fieldRemotePoll)fieldRemotePoll=setInterval(()=>checkRemoteFieldUpdates('30秒ごとの確認'),30000);
+ if(!fieldRemoteChannel&&cloud.client?.channel){
+  fieldRemoteChannel=cloud.client.channel('field-data-live-'+Math.random().toString(36).slice(2));
+  fieldRemoteChannel.on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_documents',filter:'document_key=eq.field_data'},()=>checkRemoteFieldUpdates('リアルタイム通知')).subscribe();
+ }
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkRemoteFieldUpdates('画面復帰時');});
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 $('pWorkDate').addEventListener('change',()=>{const v=$('pWorkDate').value;if(v){const y=v.split('-')[0];if(y.length!==4||Number(y)<1||Number(y)>9999){$('pWorkDate').setCustomValidity('工事施工日の年は西暦4桁で入力してください。');$('pWorkDate').reportValidity();$('pWorkDate').value='';}else{$('pWorkDate').setCustomValidity('');}}});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -700,6 +735,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
  await initializeFieldCloud();
+ startFieldRemoteUpdates();
  if(localStorage.getItem(FIELD_PENDING_KEY)==='1')await syncFieldCloud('アプリ再起動時の未同期データ確認');
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
  render();
