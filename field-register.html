@@ -328,10 +328,45 @@ $('openCamera').onclick=()=>{
  if(!p){alert('先に対象現場を選択してください。');return;}
  const u=new URL(PHOTO_MAKER_URL);
  u.searchParams.set('projectId',p.id);u.searchParams.set('projectName',p.name);
- const w=window.open(u.toString(),'photoPdfMaker');
- if(!w)alert('ポップアップがブロックされました。ブラウザーでこのサイトのポップアップを許可してください。');
+ const returnUrl=new URL(location.href);returnUrl.search='';returnUrl.searchParams.set('page','ledger');returnUrl.searchParams.set('projectId',p.id);
+ u.searchParams.set('returnUrl',returnUrl.toString());
+ // スマートフォンでも確実に元画面へ戻れるよう、同じタブで写真PDFメーカーを開きます。
+ location.href=u.toString();
  $('pdfSaveStatus').textContent='写真PDFメーカーでPDFを作成すると、この現場へ自動保存します。';
 };
 
-(async()=>{try{await initializeFieldCloud();render()}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
+async function processPhotoPdfReturn(){
+ const raw=localStorage.getItem('genbaPhotoPdfReturn_v1');
+ if(!raw)return;
+ let handoff;
+ try{handoff=JSON.parse(raw)}catch(e){localStorage.removeItem('genbaPhotoPdfReturn_v1');return}
+ const project=db.projects.find(p=>p.id===handoff.projectId);
+ if(!project){$('pdfSaveStatus').textContent='保存先の現場が見つかりません。PDFデータは端末内に保持されています。';return}
+ try{
+  const record=await getPdfRecord(handoff.recordId);
+  if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');
+  if(!(db.pdfs||[]).some(x=>x.id===record.id)){
+   const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウドログインを確認できません');
+   const storagePath=cloud.user.id+'/'+record.projectId+'/'+record.id+'.pdf';
+   const {error:uploadError}=await cloud.client.storage.from('field-pdfs').upload(storagePath,record.blob,{contentType:'application/pdf',upsert:false});
+   if(uploadError)throw new Error('クラウドPDF保存に失敗しました：'+uploadError.message);
+   db.pdfs.push({id:record.id,projectId:record.projectId,fileName:record.fileName,createdAt:record.createdAt,size:record.size,sizeLabel:record.sizeLabel,storagePath});
+   await save();
+  }
+  localStorage.removeItem('genbaPhotoPdfReturn_v1');
+  $('dProject').value=record.projectId;
+  render();$('pdfSaveStatus').textContent='写真PDFをこの現場の端末とクラウドに保存しました。下の「保存済み写真PDF」から開いて写真を確認できます。';
+  $('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});
+ }catch(e){
+  $('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、クラウド保存を完了できませんでした。再読み込みして再試行してください。'+(e.message||'');
+  console.error('Photo PDF return failed',e);
+ }
+}
+(async()=>{try{
+ await initializeFieldCloud();
+ const returnProjectId=new URLSearchParams(location.search).get('projectId');
+ render();
+ if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
+ await processPhotoPdfReturn();
+}catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
 </script></body></html>
