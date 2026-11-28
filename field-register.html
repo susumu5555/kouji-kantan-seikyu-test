@@ -1184,6 +1184,7 @@ window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KE
  if(backupParams.get('manualSyncOnly')==='1'){
   let ok=false,message='';
   try{
+   if(!fieldCloudReady)throw Error('端末とクラウドの更新状態を安全に確認できないため、同期を保留しました。同期診断で確認してください。');
    if(localStorage.getItem(FIELD_PENDING_KEY)==='1'){
     if(!fieldCloudReady)throw Error('端末とクラウドに差分があるため、安全のため同期を保留しました。同期診断で確認してください。');
     await syncFieldCloud('メインメニューからの手動同期');
