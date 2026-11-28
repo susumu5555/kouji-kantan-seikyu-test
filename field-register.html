@@ -197,7 +197,9 @@ async function initializeFieldCloud(){
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
    let merged;
    let saved=false;
-   for(let attempt=0;attempt<5;attempt++){
+   let lastConflict=null;
+   for(let attempt=0;attempt<10;attempt++){
+    if(attempt>0)await new Promise(resolve=>setTimeout(resolve,Math.min(250*Math.pow(2,attempt-1),4000)));
     const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
     if(latest.error)throw latest.error;
     if(!latest.data)throw Error('クラウドの現場データが見つかりません。端末データは退避済みです');
@@ -217,9 +219,11 @@ async function initializeFieldCloud(){
      if(!recoveredRow?.revision)throw Error('再同期の保存結果を確認できません。端末データは退避済みです');
      fieldCloudRevision=Number(recoveredRow.revision);saved=true;break;
     }
-    if(!String(recoveryError.message||recoveryError).includes('revision_conflict'))throw Error('クラウドへの再同期に失敗しました：'+(recoveryError.message||recoveryError));
+    const message=String(recoveryError.message||recoveryError);
+    if(!message.includes('revision_conflict'))throw Error('クラウドへの再同期に失敗しました：'+message);
+    lastConflict=message;
    }
-   if(!saved)throw Error('複数端末で同時に更新されています。端末データは退避済みです。少し待って再読み込みしてください');
+   if(!saved)throw Error('他の端末で更新が続いているため、自動再同期を完了できませんでした。端末データは退避済みです。全端末の操作を一度止めてから再読み込みしてください。'+(lastConflict?'（'+lastConflict+'）':''));
    db=merged;
   }else{
    db=cloudData;fieldCloudRevision=Number(docResult.data.revision);
