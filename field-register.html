@@ -62,7 +62,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v207</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v208</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div></section>
 
@@ -248,7 +248,9 @@ document.getElementById('compareFieldDataButton')?.addEventListener('click',asyn
   const projectStatus=p=>'completed='+String(p.completed)+' / 完了日='+(p.completedDate||p.completedAt||'なし');
   const localOnlyProjects=[...projectMapLocal].filter(([id])=>!projectMapCloud.has(id)).map(([id,p])=>'端末のみ：'+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
   const cloudOnlyProjects=[...projectMapCloud].filter(([id])=>!projectMapLocal.has(id)).map(([id,p])=>'クラウドのみ：'+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
-  lines.push('','【現場ごとの確認】',...(localOnlyProjects.length?localOnlyProjects:['端末のみの現場：なし']),...(cloudOnlyProjects.length?cloudOnlyProjects:['クラウドのみの現場：なし']));
+  const allCloudProjects=[...projectMapCloud].map(([id,p],n)=>(n+1)+'. '+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
+  const allLocalProjects=[...projectMapLocal].map(([id,p],n)=>(n+1)+'. '+(p.name||'名称なし')+' / '+projectStatus(p)+' / ID='+id);
+  lines.push('','【端末側の現場一覧】',...allLocalProjects,'','【クラウド側の現場一覧】',...allCloudProjects,'','【差分現場】',...(localOnlyProjects.length?localOnlyProjects:['端末のみの現場：なし']),...(cloudOnlyProjects.length?cloudOnlyProjects:['クラウドのみの現場：なし']));
   const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);
   if(allSame&&localRevision===Number(data.revision)&&localStorage.getItem(FIELD_PENDING_KEY)!=='1'){
    fieldCloudRevision=Number(data.revision);fieldCloudBaseData=cloneFieldData(remote);fieldCloudReady=true;
