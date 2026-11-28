@@ -7,7 +7,8 @@
 <style>
 :root{--navy:#173f59;--blue:#245b78;--bg:#f3f5f7;--line:#dce2e6;--muted:#66747d;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1c2930;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
-header{background:var(--navy);color:#fff;padding:20px 18px 18px}.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}header h1{font-size:22px;margin:0}header p{margin:0;color:#d4e0e7;font-size:13px}.home-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:42px;padding:9px 13px;border:1px solid #ffffff99;border-radius:10px;color:#fff;text-decoration:none;font-size:13px;font-weight:800;white-space:nowrap}.home-button:active{background:#ffffff25}@media(max-width:380px){.home-button{font-size:11px;padding:8px 9px}}
+header{background:var(--navy);color:#fff;padding:20px 18px 18px}.header-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.header-actions{display:flex;align-items:center;gap:10px}.build-version{font-size:11px;color:#d4e0e7;border:1px solid #ffffff66;border-radius:7px;padding:5px 8px;white-space:nowrap}@media(max-width:380px){.build-version{font-size:10px;padding:4px 6px}}header h1{font-size:22px;margin:0}header p{margin:0;color:#d4e0e7;font-size:13px}.home-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:42px;padding:9px 13px;border:1px solid #ffffff99;border-radius:10px;color:#fff;text-decoration:none;font-size:13px;font-weight:800;white-space:nowrap}.home-button:active{background:#ffffff25}@media(max-width:380px){.home-button{font-size:11px;padding:8px 9px}}
 main{max-width:900px;margin:0 auto;padding:16px}
 .notice{background:#fff8e7;border:1px solid #ead9a8;border-radius:13px;padding:12px 14px;font-size:13px;line-height:1.65;margin-bottom:14px}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
@@ -57,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v149</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 
 
