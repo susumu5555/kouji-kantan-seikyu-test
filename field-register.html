@@ -36,6 +36,48 @@ button.danger{background:#fff0ef;color:#a3342b;border:1px solid #f0cbc7;border-r
 .small{font-size:12px;color:var(--muted)}
 .hidden{display:none!important}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+/* Full-screen calendar layout */
+body:has(#schedule:not(.hidden)) main{max-width:none;width:100%;padding:12px 16px}
+body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
+#schedule .panel{padding:18px}
+#schedule .calendar-panel{min-height:calc(100vh - 112px)}
+#schedule .calendar-head{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;gap:12px;margin:4px 0 14px}
+#schedule .calendar-head strong{text-align:center;font-size:clamp(21px,2.2vw,30px)}
+#schedule .calendar-head button{height:48px;font-size:22px}
+#schedule .calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+#schedule .calendar-weekday{font-size:14px;padding:8px 0}
+#schedule .calendar-day{min-height:clamp(100px,13vh,160px);padding:9px 7px;text-align:left;display:flex;flex-direction:column;align-items:stretch;gap:5px;overflow:hidden}
+#schedule .calendar-day .daynum{font-size:16px;text-align:center}
+#schedule .calendar-day.other{background:#f5f7f8}
+#schedule .calendar-day.today .daynum{color:#176da5}
+#schedule .calendar-day.selected{background:#e7f1f8}
+#schedule .calendar-day .event-count{display:none}
+#schedule .calendar-day:after{display:none}
+#schedule .calendar-event-chip{display:block;background:#eaf3f9;border-left:3px solid #2879ad;border-radius:5px;padding:4px 5px;font-size:11px;line-height:1.35;color:#173f59;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#schedule .calendar-event-chip strong{font-size:11px}
+#schedule .calendar-more{font-size:10px;color:#245b78;font-weight:700;padding:1px 4px}
+#schedule .calendar-day.has-events{border-color:#a9c7da}
+#schedule .day-heading{font-size:20px;margin-bottom:12px}
+#schedule #selectedDayEvents .item{padding:15px;margin:8px 0}
+#schedule #selectedDayEvents .itemtop strong{font-size:16px}
+#schedule #selectedDayEvents .sub{font-size:14px}
+@media(max-width:700px){
+ body:has(#schedule:not(.hidden)) main{padding:7px}
+ #schedule .panel{padding:10px;border-radius:12px}
+ #schedule .calendar-grid{gap:3px}
+ #schedule .calendar-day{min-height:88px;padding:6px 3px}
+ #schedule .calendar-day .daynum{font-size:14px}
+ #schedule .calendar-event-chip{font-size:9px;padding:3px 3px;border-left-width:2px}
+ #schedule .calendar-event-chip strong{font-size:9px}
+ #schedule .calendar-weekday{font-size:11px}
+ #schedule .calendar-head{grid-template-columns:42px 1fr 42px}
+ #schedule .calendar-head button{height:42px;min-width:42px}
+}
+@media(max-width:420px){
+ #schedule .calendar-day{min-height:76px}
+ #schedule .calendar-event-chip{font-size:8px}
+ #schedule .calendar-event-chip strong{font-size:8px}
+}
 .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
 .calendar-head strong{font-size:18px}
 .calendar-head button{min-width:42px}
@@ -61,7 +103,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v198</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v199</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -751,13 +793,16 @@ function renderCalendar(){
  let html=weekdays.map(x=>'<div class="calendar-weekday">'+x+'</div>').join('');
  for(let i=0;i<42;i++){
   const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),keyDate=dateKey(d);
-  const count=db.schedules.filter(x=>x.date===keyDate).length;
+  const dayEvents=db.schedules.filter(x=>x.date===keyDate).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const count=dayEvents.length;
   const classes=['calendar-day'];
   if(d.getMonth()!==month)classes.push('other');
   if(keyDate===dateKey(new Date()))classes.push('today');
   if(keyDate===selectedCalendarDate)classes.push('selected');
   if(count)classes.push('has-events');
-  html+='<button type="button" class="'+classes.join(' ')+'" data-calendar-date="'+keyDate+'"><span class="daynum">'+d.getDate()+'</span>'+(count?'<span class="event-count">'+count+'件</span>':'')+'</button>';
+  const chips=dayEvents.slice(0,3).map(ev=>'<span class="calendar-event-chip"><strong>'+esc(ev.time||'時刻未定')+'</strong> '+esc(projectName(ev.projectId))+(ev.content?'｜'+esc(ev.content):'')+'</span>').join('');
+  const more=count>3?'<span class="calendar-more">＋'+(count-3)+'件</span>':'';
+  html+='<button type="button" class="'+classes.join(' ')+'" data-calendar-date="'+keyDate+'"><span class="daynum">'+d.getDate()+'</span>'+chips+more+'</button>';
  }
  $('calendarGrid').innerHTML=html;
  $('calendarGrid').querySelectorAll('[data-calendar-date]').forEach(b=>b.onclick=()=>{selectedCalendarDate=b.dataset.calendarDate;const d=new Date(selectedCalendarDate+'T00:00:00');if(d.getMonth()!==calendarMonth.getMonth()||d.getFullYear()!==calendarMonth.getFullYear())calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);renderCalendar();renderSelectedDay();});
