@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v184</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v185</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 
@@ -583,13 +583,13 @@ $('projectSearch').oninput=()=>{projectPage=1;renderProjects()};
 function renderSelectedProject(){
  const p=db.projects.find(x=>x.id===$('dProject').value);
  const box=$('selectedProjectInfo');
- $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name:'';
+ $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name+'（現場ID：'+(p.displayId||'採番待ち')+'）':'';
  if(!p){box.className='item empty';box.textContent='現場を選択すると、現場情報がここに表示されます。';return;}
  box.className='item';
  box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
 }
 $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
-function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
+function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}（${esc(p.displayId||'ID未設定')}）</option>`).join('');$(id).value=old})}
 $('saveDimension').onclick=async()=>{const button=$('saveDimension');if(button.disabled)return;if(!$('dProject').value||!$('dLabel').value.trim())return alert('現場と記録項目を入力してください');let record=button.dataset.pendingId?db.dimensions.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.dimensions.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{projectId:$('dProject').value,date:$('dDate').value,label:$('dLabel').value,value:$('dValue').value,unit:$('dUnit').value,memo:$('dMemo').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;['dDate','dLabel','dValue','dMemo'].forEach(x=>$(x).value='');render()}catch(e){}finally{button.disabled=false;button.textContent='寸法を保存'}};
 function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
 let calendarMonth=new Date();calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1);
