@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v187</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v188</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -394,7 +394,17 @@ async function initializeFieldCloud(){
   if(!cloudData||typeof cloudData!=='object'||!Array.isArray(cloudData.projects)||!Array.isArray(cloudData.visits)||!Array.isArray(cloudData.dimensions)||!Array.isArray(cloudData.schedules))throw Error('クラウド現場データの形式が不正です。端末データは保持しています');
   if(!Array.isArray(cloudData.pdfs))cloudData.pdfs=[];
   const localRevision=Number(localStorage.getItem('koujiFieldCloudRevision_v1')||0);fieldSyncDiagnostics.cloudRevision=Number(docResult.data.revision);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(cloudData);
-  if(localRevision>Number(docResult.data.revision)&&!hasPendingLocal){
+  const cloudRestoreEpoch=String(cloudData.__restoreEpoch||'');
+  const localRestoreEpoch=String(localStorage.getItem('koujiFieldRestoreEpoch_v1')||'');
+  const restoreEpochMismatch=Boolean(cloudRestoreEpoch&&cloudRestoreEpoch!==localRestoreEpoch);
+  if(restoreEpochMismatch){
+   db=cloneFieldData(cloudData);
+   localStorage.setItem('koujiFieldRestoreEpoch_v1',cloudRestoreEpoch);
+   localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_BASE_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
+   fieldSyncTimers.forEach(clearTimeout);fieldSyncTimers=[];fieldSyncWindowStarted=false;
+   fieldSyncDiagnostics.status='別端末の古いデータを破棄し、完全復元後のクラウドデータを読み込み';
+   fieldCloudRevision=Number(docResult.data.revision);
+  }else if(localRevision>Number(docResult.data.revision)&&!hasPendingLocal){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
@@ -463,6 +473,8 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
   const parsed=JSON.parse(await file.text()),backup=parsed?.format==='kouji-field-backup'?parsed.data:parsed;
   if(!backup||!Array.isArray(backup.projects))throw Error('現場データのバックアップとして認識できません');
   const restored={projects:backup.projects,visits:Array.isArray(backup.visits)?backup.visits:[],dimensions:Array.isArray(backup.dimensions)?backup.dimensions:[],schedules:Array.isArray(backup.schedules)?backup.schedules:[],pdfs:Array.isArray(backup.pdfs)?backup.pdfs:[]};
+  const restoreEpoch='restore-'+Date.now()+'-'+Math.random().toString(36).slice(2,10);
+  restored.__restoreEpoch=restoreEpoch;
   const counts=fieldDataCounts(restored);
   if(!confirm('【完全復元・重要】現在の端末とクラウドの現場データを、選択したバックアップファイルの内容に置き換えます。\n\n現在のデータにしかない現場・履歴・寸法・予定・PDF管理情報は削除されます。\nバックアップ時点の状態に戻します。\n\n復元件数：現場 '+counts.projects+'件／訪問 '+counts.visits+'件／寸法 '+counts.dimensions+'件／予定 '+counts.schedules+'件／PDF管理情報 '+counts.pdfs+'件\n\n本当に完全復元しますか？'))return;
   status.textContent='クラウドを完全復元中です。画面を閉じないでください。';
@@ -480,6 +492,7 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
   }
   if(!saved)throw lastError||Error('他端末の更新が続いているため完全復元できませんでした');
   db=cloneFieldData(restored);fieldCloudBaseData=cloneFieldData(restored);fieldCloudReady=true;
+  localStorage.setItem('koujiFieldRestoreEpoch_v1',restoreEpoch);
   localStorage.setItem(key,JSON.stringify(restored));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
   localStorage.setItem(FIELD_BASE_KEY,JSON.stringify(restored));localStorage.removeItem(FIELD_PENDING_KEY);localStorage.removeItem(FIELD_FIRST_SYNC_OK_KEY);
   localStorage.setItem('koujiFieldLastSyncAt_v1',String(Date.now()));
