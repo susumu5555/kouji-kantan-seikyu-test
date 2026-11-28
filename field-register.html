@@ -867,10 +867,12 @@ async function processPhotoPdfReturn(){
  try{const record=await getPdfRecord(handoff.recordId);if(!record?.blob)throw Error('作成したPDFデータを端末内で確認できません');await registerPhotoPdfImmediately(record,handoff.category,handoff.projectId);localStorage.removeItem('genbaPhotoPdfReturn_v1');$('projectPdfList').scrollIntoView({behavior:'smooth',block:'start'});}
  catch(e){$('pdfSaveStatus').textContent='PDFは端末内に保持されていますが、一覧への反映を完了できませんでした：'+(e.message||e);console.error('Photo PDF return failed',e);}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});\nwindow.addEventListener('online',()=>syncPendingPhotoPdfUploads());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');else if(document.visibilityState==='visible'){checkRemoteFieldUpdates('画面復帰時');syncPendingPhotoPdfUploads();}});
+window.addEventListener('online',()=>syncPendingPhotoPdfUploads());
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
- await initializeFieldCloud();\n await syncPendingPhotoPdfUploads();
+ await initializeFieldCloud();
+ await syncPendingPhotoPdfUploads();
  const adminDiagnostics=new URLSearchParams(location.search).get('admin')==='diagnostics';
  if(adminDiagnostics){
   document.getElementById('syncDiagnostics').classList.remove('hidden');
