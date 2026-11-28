@@ -119,7 +119,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 
 .schedule-date-time{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:10px}
 .schedule-content-field{margin-top:14px}
-#pScheduleContent{min-height:104px;resize:vertical}
+#pScheduleContent{min-height:210px;resize:vertical} #ledgerScheduleContent{min-height:280px;resize:vertical}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 .construction-date-badge{display:inline-flex;align-items:center;gap:9px;padding:7px 13px;border-radius:9px;background:#fff1d6;border:1px solid #e9a23b;color:#783f08;box-shadow:0 1px 3px rgba(120,63,8,.12);white-space:nowrap}
 .construction-date-label{font-size:12px;font-weight:800;letter-spacing:.04em;color:#92500b}
@@ -127,7 +127,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 @media(max-width:560px){.construction-date-badge{gap:6px;padding:6px 9px}.construction-date-badge strong{font-size:13px}.construction-date-label{font-size:11px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v206</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v207</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -141,8 +141,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 <label for="pAddress">市区町村・町域・番地・建物名</label><input id="pAddress" autocomplete="street-address" placeholder="例：福岡市博多区博多駅前1-2-3 〇〇マンション101号">
 <label for="pAssignee">現場担当者</label><input id="pAssignee" placeholder="担当者名">
 <div class="schedule-date-time"><div><label for="pWorkDate">工事施工日</label><input id="pWorkDate" type="date" min="0001-01-01" max="9999-12-31" inputmode="numeric" aria-describedby="pWorkDateHelp"><div id="pWorkDateHelp" class="small">手入力する場合、年は西暦4桁で入力してください（例：2026/11/28）。</div><label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-weight:700"><input id="pWorkDateUndecided" type="checkbox" style="width:auto">工事日未定</label></div><div><label for="pScheduleTime">開始時刻</label><input id="pScheduleTime" type="time"></div></div>
-<div class="schedule-content-field"><label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="3" placeholder="作業内容・持参品など"></textarea></div>
-<div class="schedule-content-field"><label for="pScheduleMemo">備考</label><textarea id="pScheduleMemo" rows="3" placeholder="現場についての備考"></textarea></div>
+<div class="schedule-content-field"><label for="pScheduleContent">予定内容</label><textarea id="pScheduleContent" rows="6" placeholder="作業内容・持参品・連絡事項など"></textarea></div>
 <div class="small">工事日が決まっている場合はカレンダーに登録されます。未定の場合は「工事日未定」にチェックしてください。</div>
 <div class="actions"><button class="primary" id="saveProject">現場を登録</button><button class="secondary" onclick="location.href='./'">ホームへ戻る</button></div>
 </div>
@@ -173,11 +172,9 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 <div id="dimensionList" hidden aria-hidden="true"></div>
 
 
-<input id="dDate" type="hidden" value=""><input id="dLabel" type="hidden" value="備考"><input id="dValue" type="hidden" value=""><input id="dUnit" type="hidden" value=""><button id="saveDimension" type="button" hidden aria-hidden="true" tabindex="-1"></button>
-<label for="ledgerScheduleContent">予定内容</label><textarea id="ledgerScheduleContent" rows="3" placeholder="作業内容・持参品など"></textarea>
+<input id="dDate" type="hidden" value=""><input id="dLabel" type="hidden" value="予定内容"><input id="dValue" type="hidden" value=""><input id="dUnit" type="hidden" value=""><button id="saveDimension" type="button" hidden aria-hidden="true" tabindex="-1"></button>
+<label for="ledgerScheduleContent">予定内容</label><textarea id="ledgerScheduleContent" rows="8" placeholder="作業内容・持参品・連絡事項など"></textarea>
 <div id="scheduleContentSaveStatus" class="small" aria-live="polite">入力すると自動保存されます。</div>
-<label for="dMemo" style="margin-top:14px">備考</label><textarea id="dMemo" placeholder="備考を入力してください"></textarea>
-<div id="memoSaveStatus" class="small" aria-live="polite">入力すると自動保存されます。</div>
 </div>
 
 
@@ -663,7 +660,7 @@ else{location.replace('./');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
 $('pWorkDateUndecided').addEventListener('change',()=>{$('pWorkDate').disabled=$('pWorkDateUndecided').checked;if($('pWorkDateUndecided').checked)$('pWorkDate').value='';});
-$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');const workDateUndecided=$('pWorkDateUndecided').checked;const workDate=workDateUndecided?'':$('pWorkDate').value;let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){const createdAt=new Date().toISOString();record={id:id(),createdAt,managementNo:nextProjectManagementNo(db.projects,createdAt)};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate,workDateUndecided,scheduleTime:$('pScheduleTime').value,scheduleContent:$('pScheduleContent').value.trim(),plannedMemo:$('pScheduleMemo').value.trim()});db.schedules=db.schedules||[];const existingEvent=db.schedules.find(x=>x.projectId===record.id&&x.type==='工事');if(workDate){if(existingEvent)Object.assign(existingEvent,{date:workDate,time:record.scheduleTime,content:record.scheduleContent});else db.schedules.push({id:id(),createdAt:new Date().toISOString(),projectId:record.id,date:workDate,time:record.scheduleTime,type:'工事',content:record.scheduleContent});}else db.schedules=db.schedules.filter(x=>!(x.projectId===record.id&&x.type==='工事'));button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate','pScheduleTime','pScheduleContent','pScheduleMemo'].forEach(x=>$(x).value='');$('pWorkDateUndecided').checked=false;$('pWorkDate').disabled=false;$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
+$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');const workDateUndecided=$('pWorkDateUndecided').checked;const workDate=workDateUndecided?'':$('pWorkDate').value;let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){const createdAt=new Date().toISOString();record={id:id(),createdAt,managementNo:nextProjectManagementNo(db.projects,createdAt)};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate,workDateUndecided,scheduleTime:$('pScheduleTime').value,scheduleContent:$('pScheduleContent').value.trim()});db.schedules=db.schedules||[];const existingEvent=db.schedules.find(x=>x.projectId===record.id&&x.type==='工事');if(workDate){if(existingEvent)Object.assign(existingEvent,{date:workDate,time:record.scheduleTime,content:record.scheduleContent});else db.schedules.push({id:id(),createdAt:new Date().toISOString(),projectId:record.id,date:workDate,time:record.scheduleTime,type:'工事',content:record.scheduleContent});}else db.schedules=db.schedules.filter(x=>!(x.projectId===record.id&&x.type==='工事'));button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate','pScheduleTime','pScheduleContent'].forEach(x=>$(x).value='');$('pWorkDateUndecided').checked=false;$('pWorkDate').disabled=false;$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
 window.toggleCompleted=function(pid){
  const project=db.projects.find(x=>x.id===pid);if(!project)return;
  if(project.completed){
@@ -774,9 +771,9 @@ function loadProjectMemo(projectId){
  const project=db.projects.find(x=>x.id===projectId);
  const legacy=(db.dimensions||[]).find(x=>x.projectId===projectId&&x.memoOnly===true);
  const scheduled=(db.schedules||[]).find(x=>x.projectId===projectId&&x.type==='工事');
- $('dMemo').value=project?.plannedMemo??legacy?.memo??'';
- $('ledgerScheduleContent').value=project?.scheduleContent??scheduled?.content??'';
- $('memoSaveStatus').textContent='入力すると自動保存されます。';
+ const mainText=project?.scheduleContent??scheduled?.content??'';
+ const oldMemo=project?.plannedMemo??legacy?.memo??'';
+ $('ledgerScheduleContent').value=[mainText,oldMemo].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(mainText&&oldMemo&&mainText.includes(oldMemo)?'':'\n\n');
  $('scheduleContentSaveStatus').textContent='入力すると自動保存されます。';
 }
 window.openLedger=function(projectId){
@@ -796,29 +793,21 @@ function renderSelectedProject(){
 $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();loadProjectMemo($('dProject').value);$('pdfSaveStatus').textContent=''};
 function fillProjectSelects(){const id='dProject',old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old}
 let memoSaveTimer=null,memoSaveBusy=false;
-async function saveLedgerField(field){
- const projectId=$('dProject').value,project=db.projects.find(x=>x.id===projectId),status=field==='memo'?$('memoSaveStatus'):$('scheduleContentSaveStatus');
+async function saveLedgerField(){
+ const projectId=$('dProject').value,project=db.projects.find(x=>x.id===projectId),status=$('scheduleContentSaveStatus');
  if(!projectId||!project){status.textContent='現場が選択されていないため保存できません。';return;}
  if(memoSaveBusy){status.textContent='保存処理中です。';return;}
  memoSaveBusy=true;status.textContent='保存中…';
  try{
-  if(field==='memo'){
-   const memo=$('dMemo').value;project.plannedMemo=memo;
-   let record=(db.dimensions||[]).find(x=>x.projectId===projectId&&x.memoOnly===true);
-   if(!record){record={id:id(),createdAt:new Date().toISOString(),memoOnly:true};db.dimensions.push(record);}
-   Object.assign(record,{projectId,date:new Date().toISOString().slice(0,10),label:'備考',value:'',unit:'',memo});
-  }else{
-   const content=$('ledgerScheduleContent').value;project.scheduleContent=content;
-   const event=(db.schedules||[]).find(x=>x.projectId===projectId&&x.type==='工事');if(event)event.content=content;
-  }
+  const content=$('ledgerScheduleContent').value;project.scheduleContent=content;delete project.plannedMemo;
+  const event=(db.schedules||[]).find(x=>x.projectId===projectId&&x.type==='工事');if(event)event.content=content;
+  db.dimensions=(db.dimensions||[]).filter(x=>!(x.projectId===projectId&&x.memoOnly===true));
   await save();status.textContent='自動保存しました。';
  }catch(e){status.textContent='保存できませんでした。通信状態を確認して、もう一度欄から移動してください。';}
  finally{memoSaveBusy=false;}
 }
-$('dMemo').addEventListener('input',()=>{$('memoSaveStatus').textContent='未保存の変更があります。入力後、欄から移動してください。';});
-$('dMemo').addEventListener('blur',()=>{clearTimeout(memoSaveTimer);memoSaveTimer=setTimeout(()=>saveLedgerField('memo'),250);});
 $('ledgerScheduleContent').addEventListener('input',()=>{$('scheduleContentSaveStatus').textContent='未保存の変更があります。入力後、欄から移動してください。';});
-$('ledgerScheduleContent').addEventListener('blur',()=>{clearTimeout(memoSaveTimer);memoSaveTimer=setTimeout(()=>saveLedgerField('content'),250);});
+$('ledgerScheduleContent').addEventListener('blur',()=>{clearTimeout(memoSaveTimer);memoSaveTimer=setTimeout(saveLedgerField,250);});
 function renderDimensions(){let selected=$('dProject').value;let a=[...db.dimensions].filter(d=>!selected||d.projectId===selected).sort((x,y)=>(y.date||'').localeCompare(x.date||''));$('dimensionList').innerHTML=a.length?a.map(d=>`<div class="item"><strong>${esc(projectName(d.projectId))}</strong><div class="sub">${esc(d.date)}　${esc(d.label)}：${esc(d.value)} ${esc(d.unit)}<br>${esc(d.memo)}</div></div>`).join(''):'<div class="empty">寸法記録はまだありません。</div>'}
 let calendarMonth=new Date();calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1);
 let selectedCalendarDate=new Date().toISOString().slice(0,10);
