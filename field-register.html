@@ -251,7 +251,7 @@ window.toggleCompleted=function(pid){
  if(p.completed){
   if(!confirm('この現場を未完了に戻しますか？'))return;
   p.completed=false;p.completedAt=null;p.completedDate=null;
-  save().then(()=>render()).catch(()=>{});
+  save().then(()=>{projectListMode='open';history.replaceState(null,'',location.pathname+'?page=cases');render()}).catch(()=>{});
   return;
  }
  let modal=document.getElementById('completeProjectModal');
@@ -275,14 +275,15 @@ window.toggleCompleted=function(pid){
   if(!confirm('次の内容で工事完了にしますか？\\n\\n現場：'+p.name+'\\n工事完了日：'+formatted+'\\n\\n確認後、この現場は「工事完了履歴」に移動します。'))return;
   const button=document.getElementById('confirmCompleteProject');button.disabled=true;
   p.completed=true;p.completedDate=date;p.completedAt=new Date(y,m-1,d,12,0,0).toISOString();
-  try{await save();modal.remove();render()}catch(e){p.completed=false;p.completedAt=null;p.completedDate=null;button.disabled=false;alert('クラウドへの保存を確認できなかったため、完了処理を取り消しました。再度お試しください。')}
+  try{await save();projectListMode='completed';history.replaceState(null,'',location.pathname+'?page=completed');modal.remove();render()}catch(e){p.completed=false;p.completedAt=null;p.completedDate=null;alert('クラウドへの保存を確認できなかったため、完了処理を取り消しました。再度お試しください。')}
  };
 };
 let projectPage=1;
+let projectListMode=new URLSearchParams(location.search).get('page')==='completed'?'completed':'open';
 const PROJECTS_PER_PAGE=20;
 function renderProjects(){
  const q=$('projectSearch').value.trim().toLowerCase();
- const showCompleted=new URLSearchParams(location.search).get('page')==='completed';
+ const showCompleted=projectListMode==='completed';
  const sorted=[...db.projects].filter(p=>Boolean(p.completed)===showCompleted).sort((a,b)=>{
   const ad=showCompleted?(a.completedDate||a.completedAt||a.createdAt):(a.createdAt);
   const bd=showCompleted?(b.completedDate||b.completedAt||b.createdAt):(b.createdAt);
@@ -355,7 +356,7 @@ $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),c
 $('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
 $('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});selectedCalendarDate=$('sDate').value;const d=new Date(selectedCalendarDate+'T00:00:00');calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');renderCalendar();renderSelectedDay()};
 function renderSchedules(){renderCalendar();renderSelectedDay()}
-function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=new URLSearchParams(location.search).get('page')==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
+function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
 const PHOTO_MAKER_URL=PHOTO_MAKER_ORIGIN+'/photo-pdf-app/';
