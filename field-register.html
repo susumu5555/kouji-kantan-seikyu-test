@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v166</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v167</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button></div></section>
 
@@ -354,7 +354,7 @@ window.toggleCompleted=function(pid){
  document.getElementById('completeProjectDate').value=today;
  document.getElementById('confirmCompleteProject').onclick=async()=>{
   const date=document.getElementById('completeProjectDate').value;
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)){alert('工事完了日を入力してください。');return}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('工事完了日を入力してください。');return}
   const [y,m,d]=date.split('-').map(Number),check=new Date(y,m-1,d);
   if(check.getFullYear()!==y||check.getMonth()!==m-1||check.getDate()!==d){alert('正しい日付を入力してください。');return}
   if(!confirm('次の内容で工事完了にしますか？\\n\\n現場：'+project.name+'\\n工事完了日：'+date.replaceAll('-','/')+'\\n\\n確認後、この現場は「工事完了履歴」に移動します。'))return;
