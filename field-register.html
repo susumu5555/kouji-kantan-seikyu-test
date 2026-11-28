@@ -330,33 +330,32 @@ window.toggleCompleted=function(pid){
     const cloud=await window.KoujiCloudReady;
     if(!cloud?.ready)throw Error('クラウド認証を確認できません');
     let stored=false,lastError=null;
-    for(let attempt=0;attempt<10;attempt++){
+    const base=cloneFieldData(fieldCloudBaseData||db);
+    const local=cloneFieldData(db);
+    for(let attempt=0;attempt<12;attempt++){
      const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
      if(latest.error)throw latest.error;
      if(!latest.data)throw Error('クラウドの現場データが見つかりません');
      const remote=latest.data.payload;
      if(!remote||!Array.isArray(remote.projects))throw Error('クラウドの現場データ形式が不正です');
-     const payload={...remote};
-     const remoteProjects=remote.projects.map(item=>item&&item.id===pid?{...item,completed:false,completedAt:null,completedDate:null}:item);
-     if(!remoteProjects.some(item=>item&&item.id===pid))throw Error('対象現場がクラウドに見つかりません。別端末のデータを保護するため変更しませんでした');
-     payload.projects=remoteProjects;
+     const payload=rebaseFieldChanges(base,local,remote);
+     const target=payload.projects.find(item=>item&&item.id===pid);
+     if(!target)throw Error('対象現場がクラウドに見つかりません。データ保護のため変更を中止しました');
+     Object.assign(target,{completed:false,completedAt:null,completedDate:null});
      const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:Number(latest.data.revision)});
      if(!error){
-      const row=Array.isArray(result)?result[0]:result;
-      if(!row?.revision)throw Error('クラウド保存結果を確認できません');
-      db=payload;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(db);
-      localStorage.setItem(key,JSON.stringify(db));
-      localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+      const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+      db=payload;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);
+      localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
       stored=true;break;
      }
-     lastError=error;
-     if(!String(error.message||error).includes('revision_conflict'))throw error;
-     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
+     lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
+     await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,Math.min(attempt,4)),3000)));
     }
     if(!stored)throw lastError||Error('クラウドの更新が続いています。再度お試しください');
     projectListMode='completed';projectPage=1;history.replaceState(null,'',location.pathname+'?list=completed');render();
-    alert('未完了に戻しました。工事完了履歴から未完了現場へ移動しました。');
-   }catch(e){alert('クラウドに保存できなかったため、完了状態は変更していません。\\n'+(e.message||e))}
+    alert('未完了現場へ移動しました。現場情報・関連記録は保持しています。');
+   }catch(e){alert('クラウドに保存できなかったため、状態は変更していません。\n'+(e.message||e))}
   })();
   return;
  }
@@ -375,49 +374,36 @@ window.toggleCompleted=function(pid){
  document.getElementById('confirmCompleteProject').onclick=async()=>{
   const date=document.getElementById('completeProjectDate').value;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){alert('工事完了日を入力してください。');return}
-  const [y,m,d]=date.split('-').map(Number);const check=new Date(y,m-1,d);
+  const [y,m,d]=date.split('-').map(Number),check=new Date(y,m-1,d);
   if(check.getFullYear()!==y||check.getMonth()!==m-1||check.getDate()!==d){alert('正しい日付を入力してください。');return}
-  const formatted=date.replaceAll('-','/');
-  if(!confirm('次の内容で工事完了にしますか？\\n\\n現場：'+p.name+'\\n工事完了日：'+formatted+'\\n\\n確認後、この現場は「工事完了履歴」に移動します。'))return;
+  if(!confirm('次の内容で工事完了にしますか？\n\n現場：'+p.name+'\n工事完了日：'+date.replaceAll('-','/')+'\n\n確認後、この現場は「工事完了履歴」に移動します。'))return;
   const button=document.getElementById('confirmCompleteProject');button.disabled=true;
-  const completedProject={...p,completed:true,completedDate:date,completedAt:new Date(y,m-1,d,12,0,0).toISOString()};
   try{
    await fieldCloudQueue.catch(()=>{});
-   const cloud=await window.KoujiCloudReady;
-   if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+   const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+   const base=cloneFieldData(fieldCloudBaseData||db),local=cloneFieldData(db);
    let stored=false,lastError=null;
-   for(let attempt=0;attempt<10;attempt++){
+   for(let attempt=0;attempt<12;attempt++){
     const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
-    if(latest.error)throw latest.error;
-    if(!latest.data)throw Error('クラウドの現場データが見つかりません');
-    const remote=latest.data.payload;
-    if(!remote||!Array.isArray(remote.projects))throw Error('クラウドの現場データ形式が不正です');
-    const payload={...remote};
-    for(const collection of ['projects','visits','dimensions','schedules','pdfs']){
-     const remoteItems=Array.isArray(remote[collection])?remote[collection]:[];
-     const localItems=Array.isArray(db[collection])?db[collection]:[];
-     const remoteIds=new Set(remoteItems.map(item=>item&&item.id).filter(Boolean));
-     payload[collection]=remoteItems.concat(localItems.filter(item=>item&&item.id&&!remoteIds.has(item.id)));
-    }
-    const targetIndex=payload.projects.findIndex(item=>item&&item.id===pid);
-    if(targetIndex>=0)payload.projects[targetIndex]={...payload.projects[targetIndex],...completedProject};
-    else payload.projects.push(completedProject);
+    if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウドの現場データが見つかりません');
+    const remote=latest.data.payload;if(!remote||!Array.isArray(remote.projects))throw Error('クラウドの現場データ形式が不正です');
+    const payload=rebaseFieldChanges(base,local,remote);
+    const target=payload.projects.find(item=>item&&item.id===pid);
+    if(!target)throw Error('対象現場がクラウドに見つかりません。データ保護のため変更を中止しました');
+    Object.assign(target,{completed:true,completedDate:date,completedAt:new Date(y,m-1,d,12,0,0).toISOString()});
     const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:Number(latest.data.revision)});
     if(!error){
-     const row=Array.isArray(result)?result[0]:result;
-     if(!row?.revision)throw Error('クラウド保存結果を確認できません');
-     db=payload;fieldCloudRevision=Number(row.revision);
-     localStorage.setItem(key,JSON.stringify(db));
-     localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+     db=payload;fieldCloudRevision=Number(row.revision);fieldCloudBaseData=cloneFieldData(payload);
+     localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
      stored=true;break;
     }
-    lastError=error;
-    if(!String(error.message||error).includes('revision_conflict'))throw error;
-    await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
+    lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
+    await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,Math.min(attempt,4)),3000)));
    }
-   if(!stored)throw lastError||Error('クラウドの更新が続いています。再度お試しください');
+   if(!stored)throw lastError||Error('クラウド更新が続いています。時間をおいて再試行してください');
    projectListMode='open';projectPage=1;history.replaceState(null,'',location.pathname+'?list=open');modal.remove();render();
-  }catch(e){button.disabled=false;alert('クラウドに工事完了を保存できなかったため、未完了のままにしています。\\n'+(e.message||e))}
+  }catch(e){button.disabled=false;alert('クラウドに工事完了を保存できなかったため、状態は変更していません。\n'+(e.message||e))}
  };
 };
 let projectPage=1;
