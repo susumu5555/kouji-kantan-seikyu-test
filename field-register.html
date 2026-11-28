@@ -123,7 +123,7 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}.schedule-date-time{grid-template-columns:1fr 1fr;gap:8px}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v201</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v203</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -1026,6 +1026,14 @@ async function processPhotoPdfReturn(){
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了・バックグラウンド移行時');});
 window.addEventListener('pagehide',()=>{if(localStorage.getItem(FIELD_PENDING_KEY)==='1')syncFieldCloud('アプリ終了時');});
 (async()=>{try{
+ const backupParams=new URLSearchParams(location.search);
+ if(backupParams.get('backupOnly')==='1'){
+  const cloud=await window.KoujiCloudReady;
+  if(!cloud?.ready)throw Error('クラウド認証を確認できません。共有設定でログインしてください。');
+  const ok=await downloadFieldBackup(false);
+  window.parent.postMessage({type:'kouji-backup-result',ok},location.origin);
+  return;
+ }
  await initializeFieldCloud();
  startFieldRemoteUpdates();
  if(localStorage.getItem(FIELD_PENDING_KEY)==='1')await syncFieldCloud('アプリ再起動時の未同期データ確認');
