@@ -164,8 +164,79 @@ $('pZipSearch').onclick=()=>{
 
 let db=JSON.parse(localStorage.getItem(key)||'{"projects":[],"visits":[],"dimensions":[],"schedules":[]}');
 if(!Array.isArray(db.pdfs))db.pdfs=[];
-let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false;
-const save=()=>{const snapshot=JSON.stringify(db);localStorage.setItem(key,snapshot);if(!fieldCloudReady)return;fieldCloudQueue=fieldCloudQueue.catch(()=>{}).then(async()=>{const cloud=window.KoujiCloud;if(!cloud?.ready)throw Error('クラウド認証が切れています');const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:JSON.parse(snapshot),p_expected_revision:fieldCloudRevision});if(error)throw error;const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('クラウド保存結果を確認できません');fieldCloudRevision=Number(row.revision);localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));}).catch(err=>{console.error('Field cloud save failed',err);alert('端末には保存しましたが、現場データのクラウド同期に失敗しました。別端末にはまだ反映されていません。\\n'+(err.message||err));throw err});return fieldCloudQueue};
+let fieldCloudRevision=null,fieldCloudQueue=Promise.resolve(),fieldCloudReady=false,fieldCloudBaseData=null;
+const cloneFieldData=value=>JSON.parse(JSON.stringify(value));
+function rebaseFieldChanges(base,local,remote){
+ const merged={...remote};
+ for(const keyName of ['projects','visits','dimensions','schedules','pdfs']){
+  const before=Array.isArray(base?.[keyName])?base[keyName]:[];
+  const wanted=Array.isArray(local?.[keyName])?local[keyName]:[];
+  const latest=Array.isArray(remote?.[keyName])?remote[keyName]:[];
+  const beforeMap=new Map(before.filter(x=>x&&x.id).map(x=>[x.id,x]));
+  const wantedMap=new Map(wanted.filter(x=>x&&x.id).map(x=>[x.id,x]));
+  const latestMap=new Map(latest.filter(x=>x&&x.id).map(x=>[x.id,x]));
+  const order=latest.filter(x=>x&&x.id).map(x=>x.id);
+  for(const oldItem of before){
+   if(!oldItem?.id)continue;
+   if(!wantedMap.has(oldItem.id))latestMap.delete(oldItem.id);
+  }
+  for(const item of wanted){
+   if(!item?.id)continue;
+   const old=beforeMap.get(item.id);
+   if(!old){if(!latestMap.has(item.id)){latestMap.set(item.id,item);order.push(item.id);}continue;}
+   const changed=Object.keys(item).filter(k=>JSON.stringify(item[k])!==JSON.stringify(old[k]));
+   if(!changed.length)continue;
+   const current=latestMap.get(item.id)||{};
+   const next={...current};
+   changed.forEach(k=>{next[k]=item[k]});
+   latestMap.set(item.id,next);
+   if(!order.includes(item.id))order.push(item.id);
+  }
+  merged[keyName]=order.filter(id=>latestMap.has(id)).map(id=>latestMap.get(id));
+ }
+ return merged;
+}
+const save=()=>{
+ const snapshot=JSON.stringify(db);
+ localStorage.setItem(key,snapshot);
+ if(!fieldCloudReady)return Promise.resolve();
+ fieldCloudQueue=fieldCloudQueue.catch(()=>{}).then(async()=>{
+  const cloud=window.KoujiCloud;
+  if(!cloud?.ready)throw Error('クラウド認証が切れています');
+  const localSnapshot=JSON.parse(snapshot);
+  const baseAtStart=cloneFieldData(fieldCloudBaseData||localSnapshot);
+  let payload=localSnapshot,lastError=null;
+  for(let attempt=0;attempt<12;attempt++){
+   const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:payload,p_expected_revision:fieldCloudRevision});
+   if(!error){
+    const row=Array.isArray(result)?result[0]:result;
+    if(!row?.revision)throw Error('クラウド保存結果を確認できません');
+    fieldCloudRevision=Number(row.revision);
+    fieldCloudBaseData=cloneFieldData(payload);
+    if(JSON.stringify(db)===snapshot){localStorage.setItem(key,JSON.stringify(payload));db=payload;}
+    localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
+    return;
+   }
+   lastError=error;
+   if(!String(error.message||error).includes('revision_conflict'))throw error;
+   await new Promise(resolve=>setTimeout(resolve,Math.min(200*Math.pow(2,Math.min(attempt,4)),3000)));
+   const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+   if(latest.error)throw latest.error;
+   if(!latest.data)throw Error('クラウドの現場データが見つかりません');
+   const remote=latest.data.payload;
+   if(!remote||!Array.isArray(remote.projects))throw Error('最新のクラウドデータ形式が不正です');
+   fieldCloudRevision=Number(latest.data.revision);
+   payload=rebaseFieldChanges(baseAtStart,localSnapshot,remote);
+   fieldCloudBaseData=cloneFieldData(remote);
+  }
+  throw lastError||Error('他端末の更新が続いています。時間をおいて再試行してください');
+ }).catch(err=>{
+  console.error('Field cloud save failed',err);
+  alert('端末には保存しましたが、クラウド同期を完了できませんでした。端末データは退避しています。\\n'+(err.message||err));
+  throw err;
+ });
+ return fieldCloudQueue;
+};
 async function initializeFieldCloud(){
  if(!window.KoujiCloudReady)throw Error('共有ログイン機能を読み込めません。再読み込みしてください');
  const cloud=await window.KoujiCloudReady;
@@ -230,6 +301,7 @@ async function initializeFieldCloud(){
   }
  }
  localStorage.setItem(key,JSON.stringify(db));
+ fieldCloudBaseData=cloneFieldData(db);
  localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
  fieldCloudReady=true;
  return fieldCloudRevision;
