@@ -424,6 +424,54 @@ $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),c
 $('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
 $('saveSchedule').onclick=()=>{if(!$('sDate').value)return alert('予定日を入力してください');db.schedules.push({id:id(),projectId:$('sProject').value,date:$('sDate').value,time:$('sTime').value,type:$('sType').value,content:$('sContent').value,createdAt:new Date().toISOString()});selectedCalendarDate=$('sDate').value;const d=new Date(selectedCalendarDate+'T00:00:00');calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);save();['sDate','sTime','sContent'].forEach(x=>$(x).value='');renderCalendar();renderSelectedDay()};
 function renderSchedules(){renderCalendar();renderSelectedDay()}
+function getFieldRecoveryCandidates(){
+ const keys=['koujiFieldData_preCloud_v1',...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(k=>k&&k.startsWith('koujiFieldData_revisionConflict_'))];
+ const sources=[];
+ for(const backupKey of [...new Set(keys)]){
+  try{const value=localStorage.getItem(backupKey);if(!value)continue;const data=JSON.parse(value);if(data&&Array.isArray(data.projects))sources.push({key:backupKey,data});}catch(e){console.warn('Invalid field backup',backupKey,e);}
+ }
+ return sources;
+}
+async function showFieldRecoveryIfNeeded(){
+ const sources=getFieldRecoveryCandidates();
+ const existing=new Set((db.projects||[]).map(p=>p&&p.id).filter(Boolean));
+ const missing=[];
+ for(const source of sources)for(const p of source.data.projects||[])if(p&&p.id&&!existing.has(p.id)){existing.add(p.id);missing.push(p);}
+ if(!missing.length)return;
+ let box=document.getElementById('fieldRecoveryPanel');
+ if(!box){box=document.createElement('section');box.id='fieldRecoveryPanel';box.className='panel';const main=document.querySelector('main');main.insertBefore(box,main.firstChild);}
+ box.innerHTML='<h2>退避データから現場を復元できます</h2><p>クラウドにない現場データが、端末のバックアップに'+missing.length+'件見つかりました。</p><p class="small">既存のクラウドデータは削除・上書きせず、不足しているデータだけを追加します。</p><button type="button" class="primary" id="recoverFieldDataButton">不足データを確認して復元</button>';
+ document.getElementById('recoverFieldDataButton').onclick=async()=>{
+  const summary=['projects','visits','dimensions','schedules','pdfs'].map(k=>k+': '+sources.reduce((n,x)=>n+(Array.isArray(x.data[k])?x.data[k].length:0),0)+'件').join('\\n');
+  if(!confirm('退避データをクラウドと照合します。既存のクラウドデータは残し、不足分のみ追加します。\\n\\n'+summary+'\\n\\n復元を続けますか？'))return;
+  const button=document.getElementById('recoverFieldDataButton');button.disabled=true;
+  try{
+   const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('クラウド認証を確認できません');
+   let done=false,lastError=null;
+   for(let attempt=0;attempt<10;attempt++){
+    const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
+    if(latest.error)throw latest.error;if(!latest.data)throw Error('クラウドデータが見つかりません');
+    const remote=latest.data.payload;if(!remote||!Array.isArray(remote.projects))throw Error('クラウドデータの形式が不正です');
+    const merged={...remote};
+    for(const k of ['projects','visits','dimensions','schedules','pdfs']){
+     const current=Array.isArray(remote[k])?remote[k]:[];
+     const seen=new Set(current.map(x=>x&&x.id).filter(Boolean));
+     merged[k]=current.slice();
+     for(const source of sources)for(const item of (Array.isArray(source.data[k])?source.data[k]:[]))if(item&&item.id&&!seen.has(item.id)){seen.add(item.id);merged[k].push(item);}
+    }
+    const {data:result,error}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});
+    if(!error){
+     const row=Array.isArray(result)?result[0]:result;if(!row?.revision)throw Error('復元の保存結果を確認できません');
+     db=merged;fieldCloudRevision=Number(row.revision);localStorage.setItem(key,JSON.stringify(db));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));fieldCloudReady=true;done=true;break;
+    }
+    lastError=error;if(!String(error.message||error).includes('revision_conflict'))throw error;
+    await new Promise(resolve=>setTimeout(resolve,Math.min(300*Math.pow(2,attempt),3000)));
+   }
+   if(!done)throw lastError||Error('クラウド更新が続いています。時間をおいて再試行してください');
+   box.remove();projectPage=1;render();alert('退避データの復元が完了しました。未完了現場・工事完了履歴を確認してください。');
+  }catch(e){button.disabled=false;alert('復元できませんでした。データは変更していません。\\n'+(e.message||e));}
+ };
+}
 function render(){const title=document.getElementById('casesTitle');if(title)title.textContent=projectListMode==='completed'?'工事完了履歴':'未完了現場';fillProjectSelects();renderProjects();renderSelectedProject();renderDimensions();renderSchedules();renderProjectPdfs()}
 
 const PHOTO_MAKER_ORIGIN='https://susumu5555.github.io';
@@ -564,6 +612,7 @@ async function processPhotoPdfReturn(){
  await initializeFieldCloud();
  const returnProjectId=new URLSearchParams(location.search).get('projectId');
  render();
+ await showFieldRecoveryIfNeeded();
  if(returnProjectId&&db.projects.some(p=>p.id===returnProjectId)){$('dProject').value=returnProjectId;render()}
  await processPhotoPdfReturn();
 }catch(e){alert('クラウド同期を開始できません：'+(e.message||e));console.error(e)}})();
