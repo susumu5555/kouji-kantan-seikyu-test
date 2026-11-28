@@ -562,7 +562,14 @@ document.getElementById('fieldRestoreFile')?.addEventListener('change',async eve
    await new Promise(resolve=>setTimeout(resolve,Math.min(350*Math.pow(2,attempt),3000)));
   }
   if(!saved)throw lastError||Error('他端末の更新が続いているため完全復元できませんでした');
-  for(const record of restoredBlobs)await savePdfBlob(record);
+  {
+   const pdfDb=await openPdfDb();
+   await new Promise((resolve,reject)=>{
+    const tx=pdfDb.transaction('pdfs','readwrite'),store=tx.objectStore('pdfs');
+    store.clear();restoredBlobs.forEach(record=>store.put(record));
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);
+   });
+  }
   db=cloneFieldData(restored);fieldCloudBaseData=cloneFieldData(restored);fieldCloudReady=true;
   localStorage.setItem('koujiFieldRestoreEpoch_v1',restoreEpoch);
   localStorage.setItem(key,JSON.stringify(restored));localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
