@@ -62,9 +62,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v218</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v219</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
-<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="downloadFullBackupButton">全データを端末にバックアップ</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px" disabled>バックアップ確認後に全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><label style="display:block;margin-top:8px"><input type="checkbox" id="backupSavedConfirm" disabled> バックアップファイルを端末に保存したことを確認しました</label><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
+<section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div><div id="projectInventory" class="small" style="margin-top:14px;white-space:pre-wrap"></div><div class="panel" style="margin-top:16px;border-color:#d99a92;background:#fffafa"><h3 style="margin-top:0;color:#9b3028">全員分のテストデータ初期化</h3><p class="small">クラウドの現場データと写真PDFをバックアップした後、共有データを空にします。各端末は次回起動時に旧データを退避して初期化します。</p><button type="button" class="secondary" id="downloadFullBackupButton">全データを端末にバックアップ</button><button type="button" class="danger" id="resetAllTestDataButton" style="margin-left:8px">今回のみバックアップ確認を省略して全員分を初期化</button><div id="backupPermissionTestStatus" class="small" style="margin-top:8px;white-space:pre-wrap"></div><label style="display:block;margin-top:8px"><input type="checkbox" id="backupSavedConfirm" disabled> バックアップファイルを端末に保存したことを確認しました</label><div id="resetAllTestDataStatus" class="small" style="margin-top:10px;white-space:pre-wrap"></div></div></section>
 
 <section id="register" class="page hidden">
 
@@ -244,27 +244,17 @@ document.getElementById('backupSavedConfirm')?.addEventListener('change',e=>{
 document.getElementById('resetAllTestDataButton')?.addEventListener('click',async()=>{
  const button=document.getElementById('resetAllTestDataButton'),status=document.getElementById('resetAllTestDataStatus');
  if(button.disabled)return;
- if(!localStorage.getItem('koujiBackupConfirmedAt_v1'))throw Error('先にバックアップファイルの保存を確認してください');
- if(!confirm('バックアップファイルを端末に保存したことを確認済みです。全員分の共有テストデータを初期化します。実行しますか？'))return;
+ if(!confirm('【今回のみバックアップ確認を省略】全員分の共有テストデータ（現場・訪問・寸法・予定・写真PDF）を初期化します。以前ダウンロードしたバックアップはありますが、今回の最新状態を含むか確認できません。続行しますか？'))return;
  button.disabled=true;status.textContent='共有データを初期化しています…';
  try{
   const cloud=await window.KoujiCloudReady;if(!cloud?.ready)throw Error('共有クラウドへログインしてください');
   const {data:doc,error:readError}=await cloud.client.from('shared_documents').select('revision,payload').eq('document_key','field_data').maybeSingle();
   if(readError)throw readError;if(!doc?.payload)throw Error('クラウドの現場データが見つかりません。初期化を中止しました');
   const original=doc.payload;
-  if(!localStorage.getItem('koujiBackupConfirmedAt_v1'))throw Error('先に「全データを端末にバックアップ」を実行し、保存確認にチェックしてください');
-  const backupRevision=Number(localStorage.getItem('koujiBackupSourceRevision_v1'));
-  if(!Number.isFinite(backupRevision)||backupRevision!==Number(doc.revision)){
-   localStorage.removeItem('koujiBackupConfirmedAt_v1');
-   document.getElementById('backupSavedConfirm').checked=false;
-   document.getElementById('backupSavedConfirm').disabled=true;
-   button.disabled=true;
-   throw Error('バックアップ後にクラウドデータが更新されています。最新データを含むバックアップをもう一度作成してください。現在のクラウド revision：'+doc.revision+'／バックアップ revision：'+backupRevision);
-  }
   const paths=[...new Set((original.pdfs||[]).map(x=>x.storagePath).filter(Boolean))];
   const stamp=new Date().toISOString().replace(/[:.]/g,'-');
   const token='reset-'+stamp+'-'+Math.random().toString(36).slice(2,9);
-  const empty={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[],resetToken:token,resetAt:new Date().toISOString(),backupConfirmedAt:localStorage.getItem('koujiBackupConfirmedAt_v1')};
+  const empty={projects:[],visits:[],dimensions:[],schedules:[],pdfs:[],resetToken:token,resetAt:new Date().toISOString()};
   const {data:reset,error:resetError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:empty,p_expected_revision:Number(doc.revision)});
   if(resetError)throw resetError;const resetRow=Array.isArray(reset)?reset[0]:reset;if(!resetRow?.revision)throw Error('初期化後のクラウド保存結果を確認できません');
   for(const path of paths){const {error}=await cloud.client.storage.from('field-pdfs').remove([path]);if(error)console.warn('Original PDF cleanup pending',path,error);}
@@ -275,7 +265,7 @@ document.getElementById('resetAllTestDataButton')?.addEventListener('click',asyn
   fieldCloudRevision=Number(resetRow.revision);fieldCloudBaseData=cloneFieldData(db);fieldCloudReady=true;
   try{const pdfDb=await openPdfDb();await new Promise((resolve,reject)=>{const tx=pdfDb.transaction('pdfs','readwrite');tx.objectStore('pdfs').clear();tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}catch(e){console.warn('Local PDF cleanup failed',e);}
   fieldSyncDiagnostics.status='全員分初期化済み。各端末は次回起動時に旧データを退避して初期化します';fieldSyncDiagnostics.localCounts=fieldDataCounts(db);fieldSyncDiagnostics.cloudCounts=fieldDataCounts(db);fieldSyncDiagnostics.localRevision=Number(resetRow.revision);fieldSyncDiagnostics.cloudRevision=Number(resetRow.revision);renderFieldSyncDiagnostics();render();
-  status.textContent='共有データを空にしました。バックアップファイルは端末に保存済みです。PDF '+paths.length+'件を含むバックアップを確認してください。各端末はアプリを再読み込みすると旧データを退避して初期化します。';
+  status.textContent='今回のみバックアップ確認を省略して共有データを初期化しました。PDF '+paths.length+'件の元ファイル削除を実行しました。各端末はアプリを再読み込みすると旧データを退避して初期化します。';
  }catch(e){status.textContent='初期化を完了できませんでした：'+(e.message||e)+'\nバックアップ作成前または途中で停止した可能性があります。元データは削除しない方針です。';}
  finally{button.disabled=false;}
 });
