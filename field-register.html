@@ -126,9 +126,18 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 .construction-date-badge strong{font-size:15px;font-weight:850;color:#713900;font-variant-numeric:tabular-nums}
 @media(max-width:560px){.construction-date-badge{gap:6px;padding:6px 9px}.construction-date-badge strong{font-size:13px}.construction-date-label{font-size:11px}}
 .work-date-control{display:flex;align-items:center;gap:10px}.work-date-control>#pWorkDate{flex:1;min-width:0}.work-date-undecided{display:inline-flex!important;align-items:center;justify-content:center;gap:6px;flex:0 0 auto;white-space:nowrap;margin:0!important;padding:10px 12px;border:1px solid #e9a23b;border-radius:9px;background:#fff1d6;color:#713900;font-size:13px;font-weight:800!important;cursor:pointer}.work-date-undecided input{width:17px!important;height:17px;margin:0;accent-color:#b96a0b}@media(max-width:560px){.work-date-control{gap:6px}.work-date-undecided{padding:9px 7px;font-size:12px}}
+.undecided-projects-panel{margin:12px 0 20px;padding:14px;border:2px solid #e4a13a;border-radius:12px;background:#fff8e9}
+.undecided-projects-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 10px;color:#794300;font-size:16px;font-weight:850}
+.undecided-projects-count{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:26px;padding:0 8px;border-radius:20px;background:#c66a13;color:white;font-size:13px}
+.undecided-project-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;margin-top:8px;border:1px solid #edc98e;border-radius:9px;background:#fff}
+.undecided-project-main{min-width:0}.undecided-project-name{font-weight:800;color:#49300f;overflow-wrap:anywhere}.undecided-project-meta{font-size:12px;color:#765b39;margin-top:4px;line-height:1.5}
+.undecided-project-status{display:inline-block;margin-top:5px;padding:3px 8px;border-radius:20px;background:#ffebc7;color:#854600;font-size:11px;font-weight:800}
+.undecided-project-card button{flex:0 0 auto}
+.undecided-project-empty{font-size:13px;color:#53675b}
+@media(max-width:560px){.undecided-projects-panel{padding:10px}.undecided-project-card{align-items:flex-start;flex-direction:column}.undecided-project-card button{width:100%}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v208</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v209</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -184,15 +193,14 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 <section id="schedule" class="page hidden">
 <div class="panel calendar-panel">
 <h2>工事日カレンダー</h2>
+<div id="undecidedProjectsPanel" class="undecided-projects-panel"></div>
 <div class="calendar-head">
 <button class="secondary" id="prevMonth" type="button" aria-label="前の月">‹</button>
 <strong id="calendarMonth"></strong>
 <button class="secondary" id="nextMonth" type="button" aria-label="次の月">›</button>
 </div>
 <div class="calendar-grid" id="calendarGrid"></div>
-<div class="calendar-legend"><span><i></i>予定あり</span><span>青枠：今日</span><span>薄青：選択日</span></div>
-<div class="calendar-color-legend"><span><i class="work"></i>工事</span><span><i class="survey"></i>現地調査</span><span><i class="repair"></i>修理</span><span><i class="revisit"></i>再訪問</span><span><i class="other"></i>その他</span></div>
-<div class="actions"><button class="secondary" id="calendarToday" type="button">今日に戻る</button></div>
+
 </div>
 <div class="panel">
 <h3 class="day-heading" id="selectedDateHeading">選択日の予定</h3>
@@ -847,7 +855,13 @@ function renderSelectedDay(){
 $('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
 $('calendarToday').onclick=()=>{const d=new Date();calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);selectedCalendarDate=dateKey(d);renderCalendar();renderSelectedDay()};
-function renderSchedules(){renderCalendar();renderSelectedDay()}
+function renderUndecidedProjects(){
+ const box=$('undecidedProjectsPanel');if(!box)return;
+ const items=(db.projects||[]).filter(p=>!p.completed&&!p.workDate).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+ box.innerHTML='<div class="undecided-projects-title">⚠ 工事日未定・日付未登録の現場 <span class="undecided-projects-count">'+items.length+'</span></div>'+
+ (items.length?items.map(p=>'<div class="undecided-project-card"><div class="undecided-project-main"><div class="undecided-project-name">'+esc(p.name||'現場名未登録')+'　<span class="small">'+esc(p.managementNo||'ID未設定')+'</span></div><div class="undecided-project-meta">'+esc(p.customer||'顧客名未登録')+'　'+esc(p.address||'住所未登録')+'<br>担当者：'+esc(p.assignee||'未設定')+'</div><span class="undecided-project-status">'+(p.workDateUndecided?'工事日未定':'工事日未登録・要確認')+'</span></div><button type="button" class="secondary" onclick="openLedger(\''+p.id+'\')">現場を確認</button></div>').join(''):'<div class="undecided-project-empty">工事日が未定の現場はありません。</div>');
+}
+function renderSchedules(){renderUndecidedProjects();renderCalendar();renderSelectedDay()}
 function getFieldRecoveryCandidates(){
  const keys=['koujiFieldData_preCloud_v1',...Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(k=>k&&k.startsWith('koujiFieldData_revisionConflict_'))];
  const sources=[];
