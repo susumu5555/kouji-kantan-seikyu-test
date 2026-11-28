@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v150</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>現場管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v151</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 
 
@@ -267,36 +267,9 @@ async function initializeFieldCloud(){
    const backupKey='koujiFieldData_revisionConflict_'+Date.now();
    localStorage.setItem(backupKey,JSON.stringify(localData));
    if(localStorage.getItem(backupKey)!==JSON.stringify(localData))throw Error('競合時の端末データ退避に失敗しました。上書きせず停止しました');
-   let merged;
-   let saved=false;
-   let lastConflict=null;
-   for(let attempt=0;attempt<10;attempt++){
-    if(attempt>0)await new Promise(resolve=>setTimeout(resolve,Math.min(250*Math.pow(2,attempt-1),4000)));
-    const latest=await cloud.client.from('shared_documents').select('document_key,revision,payload').eq('document_key','field_data').maybeSingle();
-    if(latest.error)throw latest.error;
-    if(!latest.data)throw Error('クラウドの現場データが見つかりません。端末データは退避済みです');
-    const remote=latest.data.payload;
-    if(!remote||typeof remote!=='object'||!Array.isArray(remote.projects)||!Array.isArray(remote.visits)||!Array.isArray(remote.dimensions)||!Array.isArray(remote.schedules))throw Error('最新のクラウドデータ形式が不正です。端末データは退避済みです');
-    if(!Array.isArray(remote.pdfs))remote.pdfs=[];
-    merged={...remote};
-    ['projects','visits','dimensions','schedules','pdfs'].forEach(k=>{
-     const remoteItems=Array.isArray(remote[k])?remote[k]:[];
-     const localItems=Array.isArray(localData[k])?localData[k]:[];
-     const seen=new Set(remoteItems.map(x=>x&&x.id).filter(Boolean));
-     merged[k]=remoteItems.concat(localItems.filter(x=>x&&x.id&&!seen.has(x.id)));
-    });
-    const {data:recovered,error:recoveryError}=await cloud.client.rpc('save_shared_document',{p_document_key:'field_data',p_payload:merged,p_expected_revision:Number(latest.data.revision)});
-    if(!recoveryError){
-     const recoveredRow=Array.isArray(recovered)?recovered[0]:recovered;
-     if(!recoveredRow?.revision)throw Error('再同期の保存結果を確認できません。端末データは退避済みです');
-     fieldCloudRevision=Number(recoveredRow.revision);saved=true;break;
-    }
-    const message=String(recoveryError.message||recoveryError);
-    if(!message.includes('revision_conflict'))throw Error('クラウドへの再同期に失敗しました：'+message);
-    lastConflict=message;
-   }
-   if(!saved)throw Error('他の端末で更新が続いているため、自動再同期を完了できませんでした。端末データは退避済みです。全端末の操作を一度止めてから再読み込みしてください。'+(lastConflict?'（'+lastConflict+'）':''));
-   db=merged;
+   const countData=data=>({projects:data.projects.length,visits:data.visits.length,dimensions:data.dimensions.length,schedules:data.schedules.length,pdfs:(data.pdfs||[]).length});
+   const localCounts=countData(localData),cloudCounts=countData(cloudData);
+   throw Error('端末側の更新番号がクラウドより新しいため、安全のため自動同期を停止しました。データは変更していません。\n端末: revision '+localRevision+' / 現場 '+localCounts.projects+'件・訪問 '+localCounts.visits+'件・寸法 '+localCounts.dimensions+'件・予定 '+localCounts.schedules+'件・PDF '+localCounts.pdfs+'件\nクラウド: revision '+Number(docResult.data.revision)+' / 現場 '+cloudCounts.projects+'件・訪問 '+cloudCounts.visits+'件・寸法 '+cloudCounts.dimensions+'件・予定 '+cloudCounts.schedules+'件・PDF '+cloudCounts.pdfs+'件\n端末データの退避先: '+backupKey);
   }else{
    db=cloudData;fieldCloudRevision=Number(docResult.data.revision);
   }
