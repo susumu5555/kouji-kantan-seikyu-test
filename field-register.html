@@ -58,7 +58,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
 @media(max-width:560px){.home-grid{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}main{padding:12px}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v188</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v189</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -170,6 +170,27 @@ let fieldSyncDiagnostics={status:'確認中',localRevision:0,cloudRevision:null,
 const fieldDataCounts=data=>({projects:Array.isArray(data?.projects)?data.projects.length:0,visits:Array.isArray(data?.visits)?data.visits.length:0,dimensions:Array.isArray(data?.dimensions)?data.dimensions.length:0,schedules:Array.isArray(data?.schedules)?data.schedules.length:0,pdfs:Array.isArray(data?.pdfs)?data.pdfs.length:0});
 function renderFieldSyncDiagnostics(){const el=document.getElementById('syncDiagnosticsContent');if(!el)return;const syncButton=document.getElementById('manualFieldSyncButton');if(syncButton){const blocked=!fieldCloudReady;syncButton.disabled=blocked;syncButton.textContent=blocked?'同期保留中（データ確認が必要）':'今すぐクラウド同期';syncButton.title=blocked?'端末とクラウドの更新差があるため、安全確認まで同期を停止しています。':'';}const d=fieldSyncDiagnostics;const fmt=x=>x?'現場 '+x.projects+'件／訪問 '+x.visits+'件／寸法 '+x.dimensions+'件／予定 '+x.schedules+'件／PDF '+x.pdfs+'件':'未取得';const stamp=localStorage.getItem('koujiFieldLastSyncAt_v1');const stampText=stamp?'\n最終同期成功：'+new Date(Number(stamp)).toLocaleString('ja-JP'):'\n最終同期成功：まだありません';el.textContent='状態：'+d.status+'\n端末：revision '+d.localRevision+'\n'+fmt(d.localCounts)+'\nクラウド：revision '+(d.cloudRevision===null?'未取得':d.cloudRevision)+'\n'+fmt(d.cloudCounts)+stampText+(d.backupKey?'\n端末データ退避先：'+d.backupKey:'');}
 const cloneFieldData=value=>JSON.parse(JSON.stringify(value));
+function projectRegistrationDateKey(project){
+ const date=new Date(project.createdAt||Date.now());
+ const local=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+ return local.toISOString().slice(0,10).replaceAll('-','');
+}
+function assignMissingProjectNumbers(projects){
+ const sorted=[...projects].sort((a,b)=>String(a.createdAt||'').localeCompare(String(b.createdAt||''))||String(a.id).localeCompare(String(b.id)));
+ const counters=new Map();
+ for(const p of sorted){
+  const dateKey=projectRegistrationDateKey(p);
+  const match=String(p.managementNo||'').match(/^([0-9]{8})-([0-9]+)$/);
+  if(match){const n=Number(match[2]);counters.set(match[1],Math.max(counters.get(match[1])||0,n));}
+  else{const next=(counters.get(dateKey)||0)+1;counters.set(dateKey,next);p.managementNo=dateKey+'-'+next;}
+ }
+ return projects;
+}
+function nextProjectManagementNo(projects,createdAt=new Date().toISOString()){
+ const date=new Date(createdAt),local=new Date(date.getTime()-date.getTimezoneOffset()*60000),dateKey=local.toISOString().slice(0,10).replaceAll('-','');
+ const max=(projects||[]).reduce((n,p)=>{const prefix=dateKey+'-';const value=String(p.managementNo||'');const suffix=value.startsWith(prefix)?Number(value.slice(prefix.length)):0;return Number.isFinite(suffix)?Math.max(n,suffix):n;},0);
+ return dateKey+'-'+(max+1);
+}
 function rebaseFieldChanges(base,local,remote){
  const merged={...remote};
  for(const keyName of ['projects','visits','dimensions','schedules','pdfs']){
@@ -413,6 +434,7 @@ async function initializeFieldCloud(){
    if(hasPendingLocal&&savedSyncBase){db=rebaseFieldChanges(JSON.parse(savedSyncBase),localData,cloudData);fieldSyncDiagnostics.status='前回の未同期データを保持・再同期待ち';}else{db=cloudData;fieldSyncDiagnostics.status=fieldSyncDiagnostics.localRevision===Number(docResult.data.revision)?'端末とクラウドの更新番号は一致':'クラウドから最新データを読み込み';}fieldCloudRevision=Number(docResult.data.revision);
   }
  }
+ assignMissingProjectNumbers(db.projects);
  localStorage.setItem(key,JSON.stringify(db));
  fieldCloudBaseData=cloneFieldData(db);
  localStorage.setItem('koujiFieldCloudRevision_v1',String(fieldCloudRevision));
@@ -516,7 +538,7 @@ if(['register','cases','schedule','ledger'].includes(pageToShow)){document.getEl
 else{location.replace('./');}
 
 document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(b.dataset.page==='home'){location.href='./';return;}showPage(b.dataset.page)});
-$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){record={id:id(),createdAt:new Date().toISOString()};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
+$('saveProject').onclick=async()=>{const button=$('saveProject');if(button.disabled)return;let name=$('pName').value.trim();if(!name)return alert('現場名を入力してください');const address=[$('pPref').value,$('pAddress').value.trim()].filter(Boolean).join('');let record=button.dataset.pendingId?db.projects.find(x=>x.id===button.dataset.pendingId):null;if(!record){const createdAt=new Date().toISOString();record={id:id(),createdAt,managementNo:nextProjectManagementNo(db.projects,createdAt)};db.projects.push(record);button.dataset.pendingId=record.id;}Object.assign(record,{name,customer:$('pCustomer').value,address,postalCode:$('pZip').value.replace(/[^0-9]/g,''),assignee:$('pAssignee').value.trim(),workDate:$('pWorkDate').value});button.disabled=true;button.textContent='保存中…';try{await save();delete button.dataset.pendingId;projectPage=1;['pName','pCustomer','pZip','pAddress','pAssignee','pWorkDate'].forEach(x=>$(x).value='');$('pPref').value='';$('pZipStatus').textContent='';showPage('cases')}catch(e){}finally{button.disabled=false;button.textContent='現場を登録'}};
 window.toggleCompleted=function(pid){
  const project=db.projects.find(x=>x.id===pid);if(!project)return;
  if(project.completed){
@@ -579,7 +601,7 @@ function renderProjects(){
  const pageItems=filtered.slice(from,from+PROJECTS_PER_PAGE);
  $('projectList').innerHTML=pageItems.length?pageItems.map(p=>{
   const completion=p.completedDate|| (p.completedAt?new Date(p.completedAt).toLocaleDateString('sv-SE'):'');
-  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
+  return `<div class="item"><div class="itemtop"><strong>${esc(p.name)}</strong><span class="pill">ID：${esc(p.managementNo||'番号未設定')}</span><span class="pill">${esc(p.workDate||'施工日未設定')}</span></div><div class="sub">${esc(p.customer)}　${esc(p.address)}<br>現場担当者：${esc(p.assignee||'未設定')}<br>登録：${new Date(p.createdAt).toLocaleDateString('ja-JP')}${showCompleted&&completion?'<br>工事完了日：'+esc(completion.replaceAll('-','/')):''}</div><div class="actions"><button class="secondary" onclick="openLedger('${p.id}')">工事台帳</button><button class="secondary" onclick="toggleCompleted('${p.id}')">${showCompleted?'未完了に戻す':'工事完了にする'}</button></div></div>`;
  }).join(''):`<div class="empty">${showCompleted?'完了した現場はありません。':'未完了の現場はありません。'}</div>`;
  const end=Math.min(from+PROJECTS_PER_PAGE,total);
  $('projectPagination').innerHTML=total?`<span class="small" style="align-self:center">${from+1}～${end}件 / 全${total}件　（${projectPage}/${pageCount}ページ）</span><button class="secondary" ${projectPage===1?'disabled':''} onclick="changeProjectPage(-1)">前へ</button><button class="secondary" ${projectPage===pageCount?'disabled':''} onclick="changeProjectPage(1)">次へ</button>`:'';
@@ -596,7 +618,7 @@ function renderSelectedProject(){
  $('ledgerProjectHeading').textContent=p?'対象現場：'+p.name:'';
  if(!p){box.className='item empty';box.textContent='現場を選択すると、現場情報がここに表示されます。';return;}
  box.className='item';
- box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
+ box.innerHTML=`<strong>${esc(p.name)}</strong><div class="sub">現場ID：${esc(p.managementNo||'番号未設定')}<br>顧客名：${esc(p.customer||'未登録')}<br>住所：${esc(p.address||'未登録')}<br>現場担当者：${esc(p.assignee||'未設定')}<br>工事施工日：${esc(p.workDate||'未設定')}<br>登録日：${new Date(p.createdAt).toLocaleDateString('ja-JP')}</div>`;
 }
 $('dProject').onchange=()=>{renderSelectedProject();renderDimensions();renderProjectPdfs();$('pdfSaveStatus').textContent=''};
 function fillProjectSelects(){['dProject','sProject'].forEach(id=>{let old=$(id).value;$(id).innerHTML='<option value="">現場を選択</option>'+db.projects.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');$(id).value=old})}
