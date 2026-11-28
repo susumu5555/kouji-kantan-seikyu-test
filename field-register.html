@@ -136,9 +136,10 @@ body:has(#schedule:not(.hidden)) header .header-inner{max-width:none}
 .undecided-project-empty{font-size:13px;color:#53675b}
 @media(max-width:560px){.undecided-projects-panel{padding:10px}.undecided-project-card{align-items:flex-start;flex-direction:column}.undecided-project-card button{width:100%}}
 .ledger-schedule-edit{margin:18px 0 16px;padding:14px;border:1px solid #d5e0e8;border-radius:11px;background:#f7fafc}.ledger-schedule-edit h3{margin:0 0 10px;font-size:15px;color:#173f59}.ledger-schedule-edit .schedule-date-time{margin-top:0}.ledger-schedule-edit input[type=date],.ledger-schedule-edit input[type=time]{width:100%}
+.selected-day-event-actions{display:flex;justify-content:flex-end;margin-top:10px}.selected-day-event-actions button{min-width:112px}@media(max-width:560px){.selected-day-event-actions button{width:100%}}
 </style></head>
 <body>
-<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v210</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
+<header><div class="header-inner"><h1>工事管理アプリ</h1><div class="header-actions"><span class="build-version">開発版 v211</span><a class="home-button" href="./" aria-label="ホームに戻る">← ホームに戻る</a></div></div></header>
 <main>
 <section id="syncDiagnostics" class="panel hidden" style="border-color:#8aa9bf;background:#f8fbfd"><h2>同期診断</h2><div id="syncDiagnosticsContent" class="small">クラウド情報を確認しています…</div><div class="actions" style="margin-top:12px"><button type="button" class="secondary" id="manualFieldSyncButton">今すぐクラウド同期</button><button type="button" class="secondary" id="compareFieldDataButton" style="margin-left:8px">端末・クラウドの差分を確認</button></div><div id="fieldCompareResult" class="small" style="margin-top:12px;white-space:pre-wrap"></div></section>
 <section id="register" class="page hidden">
@@ -891,7 +892,8 @@ function renderSelectedDay(){
  const d=new Date(selectedCalendarDate+'T00:00:00');
  $('selectedDateHeading').textContent=d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日（'+['日','月','火','水','木','金','土'][d.getDay()]+'）の予定';
  const a=db.schedules.filter(x=>x.date===selectedCalendarDate).sort((x,y)=>(x.time||'').localeCompare(y.time||''));
- $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type '+scheduleTypeClass(x.type)+'">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
+ $('selectedDayEvents').innerHTML=a.length?a.map(x=>'<div class="item selected-day-event"><div class="itemtop"><strong>'+esc(x.time||'時刻未設定')+'　'+esc(projectName(x.projectId))+'</strong><span class="event-type '+scheduleTypeClass(x.type)+'">'+esc(x.type)+'</span></div><div class="sub">'+esc(x.content||'内容未入力')+'</div><div class="selected-day-event-actions"><button type="button" class="secondary" data-open-ledger="'+esc(x.projectId)+'">現場を確認</button></div></div>').join(''):'<div class="empty">この日の予定はありません。</div>';
+ $('selectedDayEvents').querySelectorAll('[data-open-ledger]').forEach(button=>button.addEventListener('click',()=>openLedger(button.dataset.openLedger)));
 }
 $('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
 $('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
